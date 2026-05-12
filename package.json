@@ -16,10 +16,12 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.2",
+    "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "fast-xml-parser": "^5.8.0",
     "next": "14.2.35",
     "papaparse": "^5.5.3",
+    "pg": "^8.20.0",
     "react": "^18",
     "react-dom": "^18",
     "recharts": "^3.8.1"
@@ -27,6 +29,7 @@
   "devDependencies": {
     "@types/node": "^20",
     "@types/papaparse": "^5.5.2",
+    "@types/pg": "^8.20.0",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",
