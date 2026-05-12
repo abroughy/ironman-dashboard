@@ -51,10 +51,19 @@ export async function POST(request: NextRequest) {
     source?: string
   }
 
+  if (!body.discipline || !body.date || !body.durationSecs || !body.distanceMetres) {
+    return NextResponse.json({ error: 'Missing required fields: discipline, date, durationSecs, distanceMetres' }, { status: 400 })
+  }
+
+  const date = new Date(body.date)
+  if (isNaN(date.getTime())) {
+    return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
+  }
+
   const session = await prisma.session.create({
     data: {
       discipline: body.discipline,
-      date: new Date(body.date),
+      date,
       durationSecs: body.durationSecs,
       distanceMetres: body.distanceMetres,
       avgHeartRate: body.avgHeartRate ?? null,
