@@ -1,0 +1,37 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Session {
+  id               String     @id @default(cuid())
+  discipline       String     // "swim" | "bike" | "run"
+  date             DateTime
+  durationSecs     Int
+  distanceMetres   Float
+  avgHeartRate     Int?
+  perceivedEffort  Int?
+  notes            String?
+  source           String     // "strava" | "zwift" | "manual" | "import"
+  stravaActivityId String?    @unique
+  rawData          String?    // JSON string (SQLite has no JSON type)
+  createdAt        DateTime   @default(now())
+}
+
+model StravaToken {
+  id           String   @id @default("singleton")
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+}
+
+model CoachingSummary {
+  id          String   @id @default(cuid())
+  weekStart   DateTime @unique
+  content     String   // JSON string
+  generatedAt DateTime @default(now())
+}
