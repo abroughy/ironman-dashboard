@@ -224,10 +224,10 @@ WEEKLY_TARGETS=        # JSON: {"swim":5000,"bike":150000,"run":30000} (metres)
 
 ---
 
-## Out of Scope
+## Out of Scope (v1)
 
-- Multi-user support
-- Nutrition tracking
+- **Multi-user support** — planned for a future version. To avoid painful rewrites later: use Prisma from day one (easy to add a `User` model), avoid hardcoding single-user assumptions in API routes, and keep auth logic isolated so it can be swapped in. When multi-user is added, Strava tokens and coaching summaries will move to per-user rows.
+- **Nutrition tracking** — planned for a future version. No design decisions today depend on this.
 - Heart rate zone analysis (may add later)
 - Mobile native app
 - Zwift direct API (not publicly available)
