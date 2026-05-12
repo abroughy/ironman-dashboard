@@ -22,7 +22,7 @@ export function weeksToRace(): number {
   return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24 * 7)))
 }
 
-export function currentPhase(): string {
+export function currentPhase(): 'Build' | 'Peak' | 'Taper' | 'Race Week' {
   const weeks = weeksToRace()
   if (weeks > 12) return 'Build'
   if (weeks > 6) return 'Peak'
