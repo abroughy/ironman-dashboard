@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/db'
 import { config } from '@/lib/config'
+
+export const dynamic = 'force-dynamic'
 import PhaseBanner from '@/components/PhaseBanner'
 import LoadRing from '@/components/LoadRing'
 import CoachingCard from '@/components/CoachingCard'

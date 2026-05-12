@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/db'
 import { calculateProjection } from '@/lib/projection'
+
+export const dynamic = 'force-dynamic'
 import DisciplineChart from '@/components/DisciplineChart'
 import FinishProjection from '@/components/FinishProjection'
 

@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/db'
 import { runRules } from '@/lib/rules'
+
+export const dynamic = 'force-dynamic'
 import { weeksToRace } from '@/lib/config'
 import { config } from '@/lib/config'
 import AlertBanner from '@/components/AlertBanner'
