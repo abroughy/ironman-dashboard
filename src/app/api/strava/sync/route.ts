@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { syncAllActivities } from '@/lib/strava'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST() {
   try {
     const synced = await syncAllActivities()

@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db'
 import { config } from '@/lib/config'
 import { getValidToken, mapActivityToSession } from '@/lib/strava'
 
+export const dynamic = 'force-dynamic'
+
 // Strava webhook verification handshake
 export function GET(request: NextRequest) {
   const mode = request.nextUrl.searchParams.get('hub.mode')

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { exchangeCode, registerWebhook, syncAllActivities } from '@/lib/strava'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code')
   if (!code) return NextResponse.json({ error: 'Missing code' }, { status: 400 })
