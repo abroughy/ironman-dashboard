@@ -45,7 +45,10 @@ export async function getValidToken(): Promise<string | null> {
       grant_type: 'refresh_token',
     }),
   })
-  if (!res.ok) return null
+  if (!res.ok) {
+    console.error('Strava token refresh failed', res.status)
+    return null
+  }
   const data = await res.json() as { access_token: string; refresh_token: string; expires_at: number }
   await prisma.stravaToken.update({
     where: { id: 'singleton' },
@@ -83,7 +86,7 @@ export interface StravaActivity {
   elapsed_time: number
   distance: number
   average_heartrate?: number
-  average_watts?: number
+  average_watts?: number  // stored in rawData; no dedicated DB column yet
 }
 
 export function mapActivityToSession(activity: StravaActivity) {
