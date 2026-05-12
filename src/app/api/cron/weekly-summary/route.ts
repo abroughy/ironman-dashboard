@@ -7,6 +7,11 @@ export async function GET(request: NextRequest) {
   if (authHeader !== `Bearer ${config.cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  const summary = await generateWeeklySummary()
-  return NextResponse.json(summary)
+  try {
+    const summary = await generateWeeklySummary()
+    return NextResponse.json(summary)
+  } catch (err) {
+    console.error('Weekly summary cron failed', err)
+    return NextResponse.json({ error: 'Failed to generate summary' }, { status: 500 })
+  }
 }

@@ -37,8 +37,10 @@ export async function generateWeeklySummary(): Promise<CoachingSummaryContent> {
     const disc = s.discipline as 'swim' | 'bike' | 'run'
     if (!bests[disc]) continue
     if (s.distanceMetres > bests[disc].distance) bests[disc].distance = s.distanceMetres
-    const pace = s.durationSecs / s.distanceMetres
-    if (bests[disc].pace === null || pace < bests[disc].pace!) bests[disc].pace = pace
+    if (s.distanceMetres > 0) {
+      const pace = s.durationSecs / s.distanceMetres
+      if (bests[disc].pace === null || pace < bests[disc].pace!) bests[disc].pace = pace
+    }
   }
 
   // Rule alerts
@@ -104,8 +106,16 @@ Respond with this exact JSON structure:
     messages: [{ role: 'user', content: prompt }],
   })
 
+  if (message.stop_reason !== 'end_turn') {
+    throw new Error(`Claude stopped unexpectedly: ${message.stop_reason}`)
+  }
   const text = message.content[0].type === 'text' ? message.content[0].text : ''
-  const parsed = JSON.parse(text) as CoachingSummaryContent
+  let parsed: CoachingSummaryContent
+  try {
+    parsed = JSON.parse(text) as CoachingSummaryContent
+  } catch {
+    throw new Error(`Claude returned invalid JSON: ${text.slice(0, 200)}`)
+  }
 
   const weekStartDate = startOfWeek(now)
   await prisma.coachingSummary.upsert({
