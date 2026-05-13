@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { Workout } from '@/lib/workouts'
+import CompletionChart from '@/components/CompletionChart'
+import { calculateCompletion, WeekCompletion } from '@/lib/completion'
 
 // ─── types (mirrors API serialised shape) ────────────────────────────────────
 
@@ -207,6 +209,25 @@ export default function PlanPage() {
   const [error, setError] = useState<string | null>(null)
   // On mobile: which day index is expanded (default to today)
   const [mobileExpanded, setMobileExpanded] = useState<number | null>(null)
+  const [completionData, setCompletionData] = useState<WeekCompletion[]>([])
+
+  useEffect(() => {
+    async function fetchCompletion() {
+      try {
+        // Fetch enough sessions to cover 8 weeks back
+        const since = new Date()
+        since.setDate(since.getDate() - 64)
+        const res = await fetch(`/api/sessions?from=${since.toISOString()}&pageSize=200`)
+        if (!res.ok) return
+        const json = await res.json() as { sessions: { id: string; date: string; discipline: string }[] }
+        const data = calculateCompletion(json.sessions, 8)
+        setCompletionData(data)
+      } catch {
+        // silently ignore completion fetch errors
+      }
+    }
+    fetchCompletion()
+  }, [])
 
   const fetchPlan = useCallback(async (offset: number) => {
     setLoading(true)
@@ -285,6 +306,7 @@ export default function PlanPage() {
           </div>
 
           {/* Mobile — stacked, only expanded day shows workouts */}
+
           <div className="md:hidden space-y-2">
             {plan.days.map((day, i) => {
               const isExpanded = mobileExpanded === i
@@ -348,6 +370,8 @@ export default function PlanPage() {
           </div>
         </>
       )}
+
+      <CompletionChart data={completionData} />
     </div>
   )
 }

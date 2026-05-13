@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 import PhaseBanner from '@/components/PhaseBanner'
 import LoadRing from '@/components/LoadRing'
 import CoachingCard from '@/components/CoachingCard'
+import TrainingLoadCard from '@/components/TrainingLoadCard'
 import type { CoachingSummaryContent } from '@/lib/coaching'
 
 async function getWeekVolume() {
@@ -64,6 +65,8 @@ export default async function DashboardPage() {
           <LoadRing discipline="run" currentMetres={weekVol.run} targetMetres={config.weeklyTargets.run} />
         </div>
       </section>
+
+      <TrainingLoadCard />
 
       <section>
         <h2 className="text-sm font-medium text-gray-400 mb-3">Recent sessions</h2>

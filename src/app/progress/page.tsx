@@ -1,9 +1,11 @@
 import { prisma } from '@/lib/db'
 import { calculateProjection } from '@/lib/projection'
+import { calculateWeeklyVolume } from '@/lib/weeklyVolume'
 
 export const dynamic = 'force-dynamic'
 import DisciplineChart from '@/components/DisciplineChart'
 import FinishProjection from '@/components/FinishProjection'
+import WeeklyVolumeChart from '@/components/WeeklyVolumeChart'
 
 async function getSessionsForProgress() {
   return prisma.session.findMany({
@@ -51,9 +53,12 @@ export default async function ProgressPage() {
     runSessions: last8('run'),
   })
 
+  const weeklyVolumeData = calculateWeeklyVolume(sessions, 12)
+
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold">Progress</h1>
+      <WeeklyVolumeChart data={weeklyVolumeData} />
       <FinishProjection avgMins={projection.avgMins} bestMins={projection.bestMins} />
       <DisciplineChart title="Swim — pace per 100m (min)" data={swimDataPoints(sessions)} primaryLabel="min/100m" colour="#3b82f6" />
       <DisciplineChart title="Bike — avg speed (km/h)" data={bikeDataPoints(sessions)} primaryLabel="km/h" colour="#f97316" />
