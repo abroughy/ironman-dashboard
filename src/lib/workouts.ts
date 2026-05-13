@@ -272,6 +272,39 @@ export const WORKOUTS: Record<string, Workout> = {
     effortLevel: 'easy',
   },
 
+  // ── BRICK ─────────────────────────────────────────────────────────────────
+  'brick-bike': {
+    id: 'brick-bike',
+    discipline: 'bike',
+    type: 'tempo',
+    title: 'Brick — Bike Leg',
+    description:
+      'Bike leg of your brick session. Do NOT rest between this and the run — transition as fast as you can.\n\n' +
+      '• 30–40km at moderate-hard effort (zone 3–4)\n' +
+      '• Keep cadence high (90+rpm) in the final 5km to loosen legs for the run\n' +
+      '• Rack the bike, change shoes, and run immediately\n\n' +
+      'The goal is to train your legs to switch from cycling to running. The first km of the run will feel awful — that\'s normal and it gets better with practice.',
+    targetDurationMins: 70,
+    targetDistanceMetres: 35000,
+    effortLevel: 'hard',
+  },
+  'brick-run': {
+    id: 'brick-run',
+    discipline: 'run',
+    type: 'tempo',
+    title: 'Brick — Run Leg',
+    description:
+      'Run leg of your brick session — start immediately after racking the bike.\n\n' +
+      '• 5km minimum, aim for 8km if legs allow\n' +
+      '• First 1km will feel heavy and strange — push through it\n' +
+      '• Target race pace from km 2 onwards\n' +
+      '• Focus on quick turnover to counter the "brick legs" feeling\n\n' +
+      'Log this as a separate run session in the app.',
+    targetDurationMins: 40,
+    targetDistanceMetres: 6000,
+    effortLevel: 'hard',
+  },
+
   // ── GYM ───────────────────────────────────────────────────────────────────
   'gym-legs': {
     id: 'gym-legs',
