@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import SessionCard from '@/components/SessionCard'
 import ManualEntryForm from '@/components/ManualEntryForm'
 import FileImport from '@/components/FileImport'
+import EditSessionModal from '@/components/EditSessionModal'
 
 type Tab = 'manual' | 'import'
 
@@ -19,6 +20,7 @@ export default function SessionsPage() {
   const [page, setPage] = useState(1)
   const [modalOpen, setModalOpen] = useState(false)
   const [modalTab, setModalTab] = useState<Tab>('manual')
+  const [editingSession, setEditingSession] = useState<Session | null>(null)
 
   const fetchSessions = useCallback(async () => {
     const params = new URLSearchParams({ discipline, page: String(page) })
@@ -31,6 +33,7 @@ export default function SessionsPage() {
   useEffect(() => { fetchSessions() }, [fetchSessions])
 
   function onSaved() { setModalOpen(false); fetchSessions() }
+  function onEditSaved() { setEditingSession(null); fetchSessions() }
 
   return (
     <div className="space-y-4">
@@ -54,7 +57,22 @@ export default function SessionsPage() {
 
       {/* Session list */}
       <div className="space-y-2">
-        {sessions.map(s => <SessionCard key={s.id} session={s} />)}
+        {sessions.map(s => (
+          <div key={s.id} className="relative group">
+            <SessionCard session={s} />
+            {(s.source === 'manual' || s.source === 'import') && (
+              <button
+                onClick={() => setEditingSession(s)}
+                aria-label="Edit session"
+                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 focus:opacity-100 p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-opacity"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                </svg>
+              </button>
+            )}
+          </div>
+        ))}
         {sessions.length === 0 && <p className="text-gray-500 text-sm text-center py-8">No sessions found.</p>}
       </div>
 
@@ -69,7 +87,7 @@ export default function SessionsPage() {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Add session modal */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black/70 flex items-end md:items-center justify-center z-50 p-4">
           <div className="bg-gray-900 rounded-2xl w-full max-w-lg p-6 space-y-4">
@@ -90,6 +108,15 @@ export default function SessionsPage() {
             {modalTab === 'manual' ? <ManualEntryForm onSaved={onSaved} /> : <FileImport onSaved={onSaved} />}
           </div>
         </div>
+      )}
+
+      {/* Edit session modal */}
+      {editingSession && (
+        <EditSessionModal
+          session={editingSession}
+          onClose={() => setEditingSession(null)}
+          onSaved={onEditSaved}
+        />
       )}
     </div>
   )
