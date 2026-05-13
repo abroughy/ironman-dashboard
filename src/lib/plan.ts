@@ -67,26 +67,26 @@ function buildTemplate(weekNum: number): DayTemplate[] {
   // Alternate between brick and intervals each week
   const wedSession = weekNum % 2 === 0 ? ['brick-bike', 'brick-run'] : ['run-intervals']
   return [
-    [techSwims[weekNum % techSwims.length]],                         // Mon
-    ['bike-hiit', 'gym-legs'],                                       // Tue
-    wedSession,                                                      // Wed (brick or intervals)
-    [endSwims[weekNum % endSwims.length]],                           // Thu
-    [weekNum % 2 === 0 ? 'gym-core' : 'gym-legs', 'run-recovery'],  // Fri
-    ['bike-long'],                                                   // Sat
-    ['run-long'],                                                    // Sun
+    [techSwims[weekNum % techSwims.length]],                         // Mon — swim technique
+    [endSwims[weekNum % endSwims.length]],                           // Tue — swim endurance (5-a-side evening)
+    wedSession,                                                      // Wed — brick or intervals
+    ['bike-hiit', 'gym-legs'],                                       // Thu — bike HIIT + gym
+    [weekNum % 2 === 0 ? 'gym-core' : 'gym-legs', 'run-recovery'],  // Fri — gym + recovery run
+    ['bike-long'],                                                   // Sat — long ride
+    ['run-long'],                                                    // Sun — long run
   ]
 }
 
 function peakTemplate(weekNum: number): DayTemplate[] {
   const progSwims = ['swim-progressive', 'swim-endurance']
   return [
-    [progSwims[weekNum % progSwims.length]],   // Mon
-    ['bike-hiit', 'gym-legs'],                 // Tue
+    [progSwims[weekNum % progSwims.length]],   // Mon — swim
+    ['swim-endurance'],                        // Tue — swim endurance (5-a-side evening)
     ['brick-bike', 'brick-run'],               // Wed — brick every week in peak
-    ['swim-endurance'],                        // Thu
-    ['run-recovery', 'gym-core'],              // Fri
-    ['bike-long'],                             // Sat
-    ['run-long'],                              // Sun
+    ['bike-hiit', 'gym-legs'],                 // Thu — bike HIIT + gym
+    ['run-recovery', 'gym-core'],              // Fri — recovery + core
+    ['bike-long'],                             // Sat — long ride
+    ['run-long'],                              // Sun — long run
   ]
 }
 
