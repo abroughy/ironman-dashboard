@@ -7,7 +7,7 @@ interface Props {
 
 export default function FinishProjection({ avgMins, bestMins }: Props) {
   return (
-    <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+    <div className="bg-gray-900/60 rounded-2xl p-4 border border-white/5">
       <h3 className="text-sm font-medium text-gray-300 mb-1">Projected 70.3 finish</h3>
       <p className="text-xs text-gray-500 mb-3">Based on recent sessions · includes 10min transition</p>
       {avgMins == null || bestMins == null ? (

@@ -8,8 +8,8 @@ interface Props {
 
 export default function WeeklyVolumeChart({ data }: Props) {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-      <h2 className="text-sm font-medium text-gray-400 mb-3">Weekly Volume (last 12 weeks)</h2>
+    <div className="bg-gray-900/60 border border-white/5 rounded-2xl p-4">
+      <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Weekly Volume (last 12 weeks)</h2>
       {data.length === 0 ? (
         <p className="text-gray-500 text-sm text-center py-8">No session data yet.</p>
       ) : (

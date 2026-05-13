@@ -22,7 +22,7 @@ export default function CoachingCard({ summary: initial }: Props) {
 
   if (!summary) {
     return (
-      <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+      <div className="bg-gray-900/60 rounded-2xl p-4 border border-white/5">
         <p className="text-gray-400 text-sm mb-3">No coaching summary yet.</p>
         <button
           onClick={() => setConfirming(true)}
@@ -43,7 +43,7 @@ export default function CoachingCard({ summary: initial }: Props) {
   }
 
   return (
-    <div className="bg-gray-900 rounded-xl p-4 border border-gray-800 space-y-3">
+    <div className="bg-gray-900/60 rounded-2xl p-4 border border-white/5 space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-white">Weekly Coaching Summary</h3>
         <button
@@ -67,7 +67,7 @@ export default function CoachingCard({ summary: initial }: Props) {
         <div><span className="text-amber-400 font-medium">⚠ Watch: </span><span className="text-gray-300">{summary.weakness}</span></div>
         <div><span className="text-blue-400 font-medium">→ Focus: </span><span className="text-gray-300">{summary.nextFocus}</span></div>
         {summary.projectedFinish && (
-          <div className="pt-2 border-t border-gray-800 text-gray-400 text-xs">
+          <div className="pt-2 border-t border-white/5 text-gray-400 text-xs">
             Projected finish: <span className="text-white font-mono">{summary.projectedFinish.best} – {summary.projectedFinish.avg}</span>
           </div>
         )}

@@ -146,7 +146,7 @@ function BracketCard({ result, discipline }: BracketCardProps) {
 
   return (
     <div
-      className={`bg-gray-900 border rounded-xl p-4 ${hasPB ? cfg.borderClass : 'border-gray-800'}`}
+      className={`bg-gray-900/60 border rounded-2xl p-4 ${hasPB ? cfg.borderClass : 'border-white/5'}`}
     >
       <p className={`text-xs font-medium uppercase tracking-wide mb-2 ${cfg.textClass}`}>
         {result.bracket.label}
@@ -193,7 +193,7 @@ export default function PBsPage() {
               <div className="h-6 w-24 bg-gray-800 rounded animate-pulse" />
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl p-4 h-32 animate-pulse" />
+                  <div key={i} className="bg-gray-900/60 border border-white/5 rounded-2xl p-4 h-32 animate-pulse" />
                 ))}
               </div>
             </div>

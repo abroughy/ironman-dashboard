@@ -30,7 +30,7 @@ export default function SessionCard({ session, onClick }: { session: Session; on
   return (
     <button
       onClick={onClick}
-      className="w-full text-left bg-gray-900 rounded-xl px-4 py-3 border border-gray-800 hover:border-gray-700 transition-colors"
+      className="w-full text-left bg-gray-900/60 rounded-2xl px-4 py-3 border border-white/5 hover:border-white/10 transition-colors"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

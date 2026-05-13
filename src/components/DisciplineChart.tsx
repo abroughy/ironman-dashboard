@@ -13,7 +13,7 @@ interface Props {
 
 export default function DisciplineChart({ title, data, primaryLabel, colour }: Props) {
   return (
-    <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+    <div className="bg-gray-900/60 rounded-2xl p-4 border border-white/5">
       <h3 className="text-sm font-medium text-gray-300 mb-3">{title}</h3>
       {data.length < 2 ? (
         <p className="text-gray-500 text-xs text-center py-8">Not enough data yet — keep training!</p>

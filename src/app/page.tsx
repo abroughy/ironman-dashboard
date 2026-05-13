@@ -58,8 +58,8 @@ export default async function DashboardPage() {
       )}
 
       <section>
-        <h2 className="text-sm font-medium text-gray-400 mb-3">This week</h2>
-        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 flex justify-around">
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">This week</h2>
+        <div className="bg-gray-900/60 rounded-2xl p-6 border border-white/5 flex justify-around">
           <LoadRing discipline="swim" currentMetres={weekVol.swim} targetMetres={config.weeklyTargets.swim} />
           <LoadRing discipline="bike" currentMetres={weekVol.bike} targetMetres={config.weeklyTargets.bike} />
           <LoadRing discipline="run" currentMetres={weekVol.run} targetMetres={config.weeklyTargets.run} />
@@ -69,11 +69,11 @@ export default async function DashboardPage() {
       <TrainingLoadCard />
 
       <section>
-        <h2 className="text-sm font-medium text-gray-400 mb-3">Recent sessions</h2>
+        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Recent sessions</h2>
         <div className="space-y-2">
           {recentSessions.length === 0 && <p className="text-gray-500 text-sm">No sessions in the last 7 days.</p>}
           {recentSessions.map(s => (
-            <div key={s.id} className="bg-gray-900 rounded-lg px-4 py-3 border border-gray-800 flex items-center justify-between">
+            <div key={s.id} className="bg-gray-900/60 rounded-xl px-4 py-3 border border-white/5 flex items-center justify-between hover:border-white/10 transition-colors">
               <div className="flex items-center gap-3">
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${disciplineColour[s.discipline as keyof typeof disciplineColour] ?? ''}`}>
                   {s.discipline}
