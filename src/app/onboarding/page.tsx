@@ -1,6 +1,5 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 const RACE_OPTIONS = [
   { type: '70.3', label: 'Half Ironman', sub: '1.9km swim · 90km bike · 21.1km run', icon: '🏊🚴🏃' },
@@ -25,8 +24,6 @@ export default function OnboardingPage() {
   const [priority, setPriority] = useState('A')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const router = useRouter()
-
   async function handleSubmit() {
     setLoading(true)
     setError('')
@@ -41,7 +38,7 @@ export default function OnboardingPage() {
         setError(d.error ?? 'Something went wrong')
         return
       }
-      router.push('/')
+      window.location.href = '/'
     } catch {
       setError('Something went wrong')
     } finally {
