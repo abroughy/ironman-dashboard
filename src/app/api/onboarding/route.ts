@@ -9,29 +9,33 @@ export async function POST(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { raceName, raceType, raceDate } = await req.json()
+  const { raceName, raceType, raceDate, priority = 'A' } = await req.json()
 
   if (!RACE_CONFIGS[raceType as keyof typeof RACE_CONFIGS]) {
     return NextResponse.json({ error: 'Invalid race type' }, { status: 400 })
   }
 
-  const date = new Date(raceDate)
-  if (isNaN(date.getTime())) {
-    return NextResponse.json({ error: 'Invalid race date' }, { status: 400 })
+  const isFitness = raceType === 'fitness'
+
+  if (!isFitness) {
+    // Race-focused users must supply a date
+    const date = new Date(raceDate)
+    if (isNaN(date.getTime())) {
+      return NextResponse.json({ error: 'Invalid race date' }, { status: 400 })
+    }
+
+    const name = raceName?.trim() || RACE_CONFIGS[raceType as keyof typeof RACE_CONFIGS].label
+
+    await prisma.race.create({
+      data: {
+        userId: session.userId,
+        name,
+        raceType,
+        date,
+        priority,
+      },
+    })
   }
-
-  const name = raceName?.trim() || RACE_CONFIGS[raceType as keyof typeof RACE_CONFIGS].label
-
-  // Create the first Race record
-  await prisma.race.create({
-    data: {
-      userId: session.userId,
-      name,
-      raceType,
-      date,
-      priority: 'A',
-    },
-  })
 
   // Mark user as onboarded
   await prisma.user.update({
@@ -40,10 +44,7 @@ export async function POST(req: NextRequest) {
   })
 
   // Re-sign JWT with updated onboarded flag
-  const newToken = await signSession({
-    ...session,
-    onboarded: true,
-  })
+  const newToken = await signSession({ ...session, onboarded: true })
 
   const res = NextResponse.json({ ok: true })
   res.cookies.set(setSessionCookie(newToken))

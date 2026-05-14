@@ -8,6 +8,7 @@ const RACE_OPTIONS = [
   { type: 'sprint', label: 'Sprint Tri', sub: '750m swim · 20km bike · 5km run', icon: '💨' },
   { type: 'marathon', label: 'Marathon', sub: '42.2km run', icon: '🏃' },
   { type: 'half-marathon', label: 'Half Marathon', sub: '21.1km run', icon: '🏅' },
+  { type: 'fitness', label: 'General Fitness', sub: 'No race — just get fitter', icon: '💪' },
 ]
 
 const PRIORITY_OPTIONS = [
@@ -24,6 +25,28 @@ export default function OnboardingPage() {
   const [priority, setPriority] = useState('A')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  async function handleFitnessSubmit() {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ raceType: 'fitness' }),
+      })
+      if (!res.ok) {
+        const d = await res.json()
+        setError(d.error ?? 'Something went wrong')
+        return
+      }
+      window.location.href = '/'
+    } catch {
+      setError('Something went wrong')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function handleSubmit() {
     setLoading(true)
     setError('')
@@ -62,7 +85,15 @@ export default function OnboardingPage() {
               {RACE_OPTIONS.map(opt => (
                 <button
                   key={opt.type}
-                  onClick={() => { setRaceType(opt.type); setStep(2) }}
+                  onClick={() => {
+                    setRaceType(opt.type)
+                    if (opt.type === 'fitness') {
+                      // No race details needed — submit immediately
+                      handleFitnessSubmit()
+                    } else {
+                      setStep(2)
+                    }
+                  }}
                   className={`text-left p-4 rounded-2xl border transition-all ${
                     raceType === opt.type
                       ? 'border-orange-500 bg-orange-500/10'

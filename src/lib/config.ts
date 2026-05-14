@@ -49,6 +49,7 @@ export function weeklyTargetsForRace(raceType: string): { swim: number; bike: nu
     case 'sprint': return { swim: 2000, bike: 50000, run: 15000 }
     case 'marathon': return { swim: 0, bike: 0, run: 50000 }
     case 'half-marathon': return { swim: 0, bike: 0, run: 35000 }
+    case 'fitness': return { swim: 3000, bike: 60000, run: 20000 }
     default: return { swim: 5000, bike: 150000, run: 30000 } // 70.3
   }
 }

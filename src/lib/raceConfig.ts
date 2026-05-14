@@ -53,6 +53,15 @@ export const RACE_CONFIGS = {
     hasBike: false,
     hasRun: true,
   },
+  'fitness': {
+    label: 'General Fitness',
+    swim: 0,
+    bike: 0,
+    run: 0,
+    hasSwim: true,
+    hasBike: true,
+    hasRun: true,
+  },
 }
 
 export type RaceType = keyof typeof RACE_CONFIGS

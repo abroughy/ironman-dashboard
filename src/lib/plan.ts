@@ -129,6 +129,21 @@ function runOnlyTaperTemplate(): DayTemplate[] {
   ]
 }
 
+// ─── general fitness template (no race target) ───────────────────────────────
+
+function fitnessTemplate(weekNum: number): DayTemplate[] {
+  const techSwims = ['swim-catch-up', 'swim-fingertip-drag', 'swim-fist-drill', 'swim-kick-drill']
+  return [
+    [techSwims[weekNum % techSwims.length]],                      // Mon — swim
+    ['run-easy'],                                                  // Tue — easy run
+    ['bike-endurance'],                                           // Wed — steady bike
+    [weekNum % 2 === 0 ? 'gym-core' : 'gym-legs', 'run-recovery'], // Thu — gym + recovery
+    [],                                                           // Fri — REST
+    ['bike-long'],                                                // Sat — longer ride
+    ['run-easy'],                                                 // Sun — easy run
+  ]
+}
+
 // ─── main export ─────────────────────────────────────────────────────────────
 
 export function generateWeekPlan(weekOffset: number, sessions: SessionLike[], raceType = '70.3', raceDateOverride?: Date): WeekPlan {
@@ -142,13 +157,16 @@ export function generateWeekPlan(weekOffset: number, sessions: SessionLike[], ra
   const weekNumber = Math.max(0, 52 - weeksLeft - weekOffset)
 
   const isRunOnly = raceType === 'marathon' || raceType === 'half-marathon'
-  // For Full Ironman (140.6) build phase: use existing templates — they already include
-  // 3 swim sessions/week and bike-long covers 60-90km which scales naturally to 140.6 distance.
+  const isFitness = raceType === 'fitness' || !raceDateOverride
 
   let phase: 'Build' | 'Peak' | 'Taper'
   let template: DayTemplate[]
 
-  if (weeksLeft - weekOffset > 12) {
+  if (isFitness) {
+    // No race target — steady general fitness plan, always in "Build" mode
+    phase = 'Build'
+    template = fitnessTemplate(weekNumber)
+  } else if (weeksLeft - weekOffset > 12) {
     phase = 'Build'
     template = isRunOnly ? runOnlyBuildTemplate(weekNumber) : buildTemplate(weekNumber)
   } else if (weeksLeft - weekOffset > 6) {

@@ -10,8 +10,17 @@ export default async function PhaseBanner() {
 
   if (!nextRace) {
     return (
-      <div className="relative overflow-hidden rounded-2xl bg-gray-900/60 border border-white/5 px-5 py-4">
-        <p className="text-sm text-gray-400">No upcoming races — <a href="/races" className="text-orange-400 hover:underline">add one to your race calendar</a></p>
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-green-500/10 via-green-500/5 to-transparent border border-green-500/20 px-5 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-medium text-green-400/70 uppercase tracking-widest mb-0.5">General Fitness</p>
+            <p className="text-xl font-bold text-white">Build Phase</p>
+            <p className="text-xs text-gray-500 mt-0.5">Steady progress — <a href="/races" className="text-orange-400 hover:underline">add a race</a> when you have one</p>
+          </div>
+          <div className="text-right">
+            <p className="text-3xl">💪</p>
+          </div>
+        </div>
       </div>
     )
   }
