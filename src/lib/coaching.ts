@@ -118,7 +118,9 @@ Respond with this exact JSON structure:
   }
 
   const weekStartDate = startOfWeek(now)
-  await prisma.coachingSummary.upsert({
+  // TODO Phase 2: scope CoachingSummary to userId
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (prisma.coachingSummary.upsert as any)({
     where: { weekStart: weekStartDate },
     update: { content: JSON.stringify(parsed), generatedAt: new Date() },
     create: { weekStart: weekStartDate, content: JSON.stringify(parsed) },

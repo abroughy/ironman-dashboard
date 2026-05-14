@@ -10,7 +10,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const tokens = await exchangeCode(code)
-    await prisma.stravaToken.upsert({
+    // TODO Phase 2: link token to authenticated user (requires session)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (prisma.stravaToken.upsert as any)({
       where: { id: 'singleton' },
       update: {
         accessToken: tokens.access_token,

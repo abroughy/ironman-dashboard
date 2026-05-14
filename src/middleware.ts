@@ -1,25 +1,37 @@
-// src/middleware.ts
 import { NextRequest, NextResponse } from 'next/server'
+import { getSessionFromRequest } from '@/lib/auth'
 
-export function middleware(request: NextRequest) {
-  const secret = process.env.DASHBOARD_SECRET
-  if (!secret) return NextResponse.next()
+const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/strava/webhook']
 
-  const { pathname } = request.nextUrl
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl
 
-  // Always allow the lock page and its assets
-  if (pathname.startsWith('/lock')) return NextResponse.next()
-  // Allow API routes through (they validate separately where needed)
-  if (pathname.startsWith('/api')) return NextResponse.next()
+  // Always allow public paths and static files
+  if (
+    PUBLIC_PATHS.some(p => pathname.startsWith(p)) ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/favicon')
+  ) {
+    return NextResponse.next()
+  }
 
-  const cookie = request.cookies.get('dashboard_secret')?.value
-  const header = request.headers.get('x-dashboard-secret')
+  const session = await getSessionFromRequest(req)
 
-  if (cookie === secret || header === secret) return NextResponse.next()
+  // Not logged in → redirect to login
+  if (!session) {
+    const url = req.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
 
-  const url = request.nextUrl.clone()
-  url.pathname = '/lock'
-  return NextResponse.redirect(url)
+  // Logged in but not onboarded → redirect to onboarding (except if already there or API)
+  if (!session.onboarded && !pathname.startsWith('/onboarding') && !pathname.startsWith('/api/')) {
+    const url = req.nextUrl.clone()
+    url.pathname = '/onboarding'
+    return NextResponse.redirect(url)
+  }
+
+  return NextResponse.next()
 }
 
 export const config = {
