@@ -8,6 +8,9 @@ export interface RaceSummary {
   priority: string
   notes: string | null
   crossTraining: boolean
+  goalTime: number | null
+  currentTime: number | null
+  milestones: string | null
 }
 
 /** Returns the next upcoming race for a user (soonest future date), or null */

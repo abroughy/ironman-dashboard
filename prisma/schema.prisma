@@ -32,6 +32,9 @@ model Race {
   priority  String   @default("A")   // 'A' | 'B' | 'C'
   notes         String?
   crossTraining Boolean  @default(false)
+  goalTime    Int?     // target finish time in seconds
+  currentTime Int?     // current ability in seconds (self-reported)
+  milestones  String?  // JSON: GoalPlan | null — cached AI milestone plan
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

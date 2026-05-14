@@ -10,6 +10,9 @@ interface Race {
   priority: string
   notes: string | null
   crossTraining: boolean
+  goalTime: number | null
+  currentTime: number | null
+  milestones: string | null
 }
 
 const RACE_OPTIONS = [
@@ -45,7 +48,28 @@ function getRaceLabel(raceType: string) {
   return RACE_CONFIGS[raceType as keyof typeof RACE_CONFIGS]?.label ?? raceType
 }
 
-const EMPTY_FORM = { name: '', raceType: '', date: '', priority: 'A', notes: '', crossTraining: false }
+// Convert "H:MM:SS" or "M:SS" or "MM:SS" to seconds
+function parseTimeStr(str: string): number | null {
+  const parts = str.trim().split(':').map(Number)
+  if (parts.some(isNaN)) return null
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2]
+  if (parts.length === 2) return parts[0] * 60 + parts[1]
+  return null
+}
+
+function formatSeconds(s: number): string {
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const sec = s % 60
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+  return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+}
+
+function monthLabel(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
+}
+
+const EMPTY_FORM = { name: '', raceType: '', date: '', priority: 'A', notes: '', crossTraining: false, goalTimeStr: '', currentTimeStr: '' }
 
 export default function RacesClient() {
   const [races, setRaces] = useState<Race[]>([])
@@ -58,6 +82,8 @@ export default function RacesClient() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [toast, setToast] = useState('')
+  const [milestoneLoading, setMilestoneLoading] = useState<string | null>(null)
+  const [expandedMilestones, setExpandedMilestones] = useState<string | null>(null)
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -89,6 +115,8 @@ export default function RacesClient() {
       priority: race.priority,
       notes: race.notes ?? '',
       crossTraining: race.crossTraining ?? false,
+      goalTimeStr: race.goalTime ? formatSeconds(race.goalTime) : '',
+      currentTimeStr: race.currentTime ? formatSeconds(race.currentTime) : '',
     })
     setFormError('')
     setShowModal(true)
@@ -110,6 +138,8 @@ export default function RacesClient() {
     try {
       const url = editingRace ? `/api/races/${editingRace.id}` : '/api/races'
       const method = editingRace ? 'PATCH' : 'POST'
+      const goalTime = parseTimeStr(form.goalTimeStr)
+      const currentTime = parseTimeStr(form.currentTimeStr)
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -120,6 +150,8 @@ export default function RacesClient() {
           priority: form.priority,
           notes: form.notes.trim() || null,
           crossTraining: form.crossTraining,
+          goalTime,
+          currentTime,
         }),
       })
       if (!res.ok) {
@@ -145,6 +177,19 @@ export default function RacesClient() {
     if (res.ok) {
       showToast('Race deleted')
       fetchRaces()
+    }
+  }
+
+  async function generateMilestones(raceId: string) {
+    setMilestoneLoading(raceId)
+    const res = await fetch(`/api/races/${raceId}/milestones`, { method: 'POST' })
+    setMilestoneLoading(null)
+    if (res.ok) {
+      showToast('✓ Milestone plan generated')
+      fetchRaces()
+      setExpandedMilestones(raceId)
+    } else {
+      showToast('Failed to generate milestones')
     }
   }
 
@@ -193,6 +238,102 @@ export default function RacesClient() {
             </button>
           </div>
         </div>
+
+        {/* Goal time + milestones */}
+        {(race.goalTime || race.currentTime) && (
+          <div className="mt-3 pt-3 border-t border-white/5">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-3 text-xs">
+                {race.currentTime && (
+                  <span className="text-gray-500">Now: <span className="text-white font-medium">{formatSeconds(race.currentTime)}</span></span>
+                )}
+                {race.goalTime && (
+                  <span className="text-gray-500">Goal: <span className="text-orange-400 font-medium">{formatSeconds(race.goalTime)}</span></span>
+                )}
+                {race.currentTime && race.goalTime && (
+                  <span className="text-gray-600">
+                    -{formatSeconds(race.currentTime - race.goalTime)} to find
+                  </span>
+                )}
+              </div>
+              {race.currentTime && race.goalTime && (
+                <button
+                  onClick={() => race.milestones ? setExpandedMilestones(expandedMilestones === race.id ? null : race.id) : generateMilestones(race.id)}
+                  disabled={milestoneLoading === race.id}
+                  className="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-2.5 py-1 rounded-lg border border-white/5 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {milestoneLoading === race.id ? (
+                    <><span className="w-3 h-3 border border-orange-400 border-t-transparent rounded-full animate-spin" />Generating…</>
+                  ) : race.milestones ? (
+                    expandedMilestones === race.id ? '▲ Hide plan' : '▼ Show plan'
+                  ) : (
+                    <><span>✨</span> Generate milestone plan</>
+                  )}
+                </button>
+              )}
+            </div>
+
+            {/* Milestone timeline */}
+            {expandedMilestones === race.id && race.milestones && (() => {
+              const plan = JSON.parse(race.milestones)
+              return (
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      plan.realism === 'achievable' ? 'bg-green-500/20 text-green-400' :
+                      plan.realism === 'challenging' ? 'bg-orange-500/20 text-orange-400' :
+                      plan.realism === 'very ambitious' ? 'bg-red-500/20 text-red-400' :
+                      'bg-red-600/20 text-red-500'
+                    }`}>
+                      {plan.realism}
+                    </span>
+                    <span className="text-xs text-gray-500">{plan.realismNote}</span>
+                  </div>
+
+                  {/* Start row */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-gray-500 shrink-0" />
+                    <div className="flex-1 text-xs">
+                      <span className="text-gray-400">Now</span>
+                      <span className="text-white font-medium ml-2">{formatSeconds(plan.currentTime)}</span>
+                    </div>
+                  </div>
+
+                  {plan.milestones.map((m: { date: string; targetSeconds: number; targetFormatted: string; focus: string }, i: number) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <div className="w-2 h-2 rounded-full bg-orange-400/60 shrink-0 mt-1" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-gray-400">{monthLabel(m.date)}</span>
+                          <span className="text-white font-semibold">{m.targetFormatted}</span>
+                          <span className="text-gray-600">-{formatSeconds(plan.currentTime - m.targetSeconds)} from start</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{m.focus}</p>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Goal row */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
+                    <div className="flex-1 text-xs">
+                      <span className="text-gray-400">{monthLabel(race.date)}</span>
+                      <span className="text-orange-400 font-bold ml-2">{formatSeconds(plan.goalTime)} 🏁 Goal</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => generateMilestones(race.id)}
+                    disabled={milestoneLoading === race.id}
+                    className="text-xs text-gray-600 hover:text-gray-400 mt-1 transition-colors"
+                  >
+                    Regenerate plan
+                  </button>
+                </div>
+              )
+            })()}
+          </div>
+        )}
       </div>
     )
   }
@@ -330,6 +471,35 @@ export default function RacesClient() {
                 ))}
               </div>
             </div>
+
+            {/* Goal times — shown for all race types except fitness */}
+            {form.raceType && form.raceType !== 'fitness' && (
+              <div className="space-y-3 pt-1 border-t border-white/5">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Goal times <span className="normal-case text-gray-600 font-normal">(optional) — format: H:MM:SS or MM:SS</span></p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Current ability</label>
+                    <input
+                      type="text"
+                      value={form.currentTimeStr}
+                      onChange={e => setForm(f => ({ ...f, currentTimeStr: e.target.value }))}
+                      placeholder="e.g. 2:20:00"
+                      className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Goal time</label>
+                    <input
+                      type="text"
+                      value={form.goalTimeStr}
+                      onChange={e => setForm(f => ({ ...f, goalTimeStr: e.target.value }))}
+                      placeholder="e.g. 1:59:00"
+                      className="w-full bg-gray-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Cross-training toggle — shown only for run-type races */}
             {(form.raceType === 'marathon' || form.raceType === 'half-marathon') && (

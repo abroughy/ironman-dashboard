@@ -20,6 +20,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       ...(body.priority !== undefined ? { priority: body.priority } : {}),
       ...(body.notes !== undefined ? { notes: body.notes } : {}),
       ...(body.crossTraining !== undefined ? { crossTraining: Boolean(body.crossTraining) } : {}),
+      ...(body.goalTime !== undefined ? { goalTime: body.goalTime ? Number(body.goalTime) : null } : {}),
+      ...(body.currentTime !== undefined ? { currentTime: body.currentTime ? Number(body.currentTime) : null } : {}),
+      ...(body.milestones !== undefined ? { milestones: body.milestones } : {}),
     },
   })
   return NextResponse.json(updated)
