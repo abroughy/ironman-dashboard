@@ -21,6 +21,6 @@ export async function GET(request: NextRequest) {
     },
   })
 
-  const pbs = calculatePBs(sessions)
+  const pbs = calculatePBs(sessions, session.raceType)
   return NextResponse.json(pbs)
 }

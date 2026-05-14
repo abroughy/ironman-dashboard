@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db'
-import { config } from '@/lib/config'
+import { weeklyTargetsForRace } from '@/lib/config'
 import { getSession } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 
@@ -49,6 +49,8 @@ export default async function DashboardPage() {
     ? { ...(JSON.parse(latestSummary.content) as CoachingSummaryContent), generatedAt: latestSummary.generatedAt.toISOString() }
     : null
 
+  const targets = weeklyTargetsForRace(session!.raceType)
+
   return (
     <div className="space-y-6">
       <PhaseBanner />
@@ -65,9 +67,9 @@ export default async function DashboardPage() {
       <section>
         <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">This week</h2>
         <div className="bg-gray-900/60 rounded-2xl p-6 border border-white/5 flex justify-around">
-          <LoadRing discipline="swim" currentMetres={weekVol.swim} targetMetres={config.weeklyTargets.swim} />
-          <LoadRing discipline="bike" currentMetres={weekVol.bike} targetMetres={config.weeklyTargets.bike} />
-          <LoadRing discipline="run" currentMetres={weekVol.run} targetMetres={config.weeklyTargets.run} />
+          <LoadRing discipline="swim" currentMetres={weekVol.swim} targetMetres={targets.swim} />
+          <LoadRing discipline="bike" currentMetres={weekVol.bike} targetMetres={targets.bike} />
+          <LoadRing discipline="run" currentMetres={weekVol.run} targetMetres={targets.run} />
         </div>
       </section>
 

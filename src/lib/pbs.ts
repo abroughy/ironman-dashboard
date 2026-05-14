@@ -86,12 +86,18 @@ export interface Session {
   distanceMetres: number
 }
 
-export function calculatePBs(sessions: Session[]): DisciplinePBs[] {
-  const disciplines: Array<{ discipline: 'swim' | 'bike' | 'run'; brackets: DistanceBracket[] }> = [
+export function calculatePBs(sessions: Session[], raceType?: string): DisciplinePBs[] {
+  const isRunOnly = raceType === 'marathon' || raceType === 'half-marathon'
+
+  const allDisciplines: Array<{ discipline: 'swim' | 'bike' | 'run'; brackets: DistanceBracket[] }> = [
     { discipline: 'swim', brackets: SWIM_BRACKETS },
     { discipline: 'bike', brackets: BIKE_BRACKETS },
     { discipline: 'run', brackets: RUN_BRACKETS },
   ]
+
+  const disciplines = isRunOnly
+    ? allDisciplines.filter(d => d.discipline === 'run')
+    : allDisciplines
 
   return disciplines.map(({ discipline, brackets }) => {
     const discSessions = sessions.filter(

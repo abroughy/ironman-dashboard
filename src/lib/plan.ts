@@ -102,9 +102,36 @@ function taperTemplate(): DayTemplate[] {
   ]
 }
 
+// ─── run-only templates ───────────────────────────────────────────────────────
+
+function runOnlyBuildTemplate(weekNum: number): DayTemplate[] {
+  // 7-day run-focused plan for marathon/half-marathon athletes
+  return [
+    [],                    // Mon — REST
+    ['run-easy'],          // Tue
+    ['run-intervals'],     // Wed
+    ['run-recovery'],      // Thu
+    [],                    // Fri — REST
+    ['run-long'],          // Sat
+    weekNum % 2 === 0 ? ['run-tempo'] : ['run-recovery'], // Sun
+  ]
+}
+
+function runOnlyTaperTemplate(): DayTemplate[] {
+  return [
+    [],                  // Mon — REST
+    ['run-easy'],        // Tue
+    ['run-intervals'],   // Wed
+    ['run-recovery'],    // Thu
+    [],                  // Fri — REST
+    ['run-easy'],        // Sat
+    ['run-recovery'],    // Sun
+  ]
+}
+
 // ─── main export ─────────────────────────────────────────────────────────────
 
-export function generateWeekPlan(weekOffset: number, sessions: SessionLike[]): WeekPlan {
+export function generateWeekPlan(weekOffset: number, sessions: SessionLike[], raceType = '70.3'): WeekPlan {
   const now = new Date()
   const thisMonday = mondayOf(now)
   const weekStart = addDays(thisMonday, weekOffset * 7)
@@ -114,18 +141,22 @@ export function generateWeekPlan(weekOffset: number, sessions: SessionLike[]): W
   // weekNumber: 0 = first week of training, increases each week
   const weekNumber = Math.max(0, 52 - weeksLeft - weekOffset)
 
+  const isRunOnly = raceType === 'marathon' || raceType === 'half-marathon'
+  // For Full Ironman (140.6) build phase: use existing templates — they already include
+  // 3 swim sessions/week and bike-long covers 60-90km which scales naturally to 140.6 distance.
+
   let phase: 'Build' | 'Peak' | 'Taper'
   let template: DayTemplate[]
 
   if (weeksLeft - weekOffset > 12) {
     phase = 'Build'
-    template = buildTemplate(weekNumber)
+    template = isRunOnly ? runOnlyBuildTemplate(weekNumber) : buildTemplate(weekNumber)
   } else if (weeksLeft - weekOffset > 6) {
     phase = 'Peak'
-    template = peakTemplate(weekNumber)
+    template = isRunOnly ? runOnlyBuildTemplate(weekNumber) : peakTemplate(weekNumber)
   } else {
     phase = 'Taper'
-    template = taperTemplate()
+    template = isRunOnly ? runOnlyTaperTemplate() : taperTemplate()
   }
 
   const days: PlannedDay[] = template.map((workoutIds, dayIndex) => {

@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     select: { id: true, discipline: true, date: true },
   })
 
-  const plan = generateWeekPlan(weekOffset, sessions)
+  const plan = generateWeekPlan(weekOffset, sessions, session.raceType)
 
   // Serialize dates to ISO strings for JSON transport
   const serialised = {
