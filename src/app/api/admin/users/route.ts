@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
   if (!session?.isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const body = await request.json()
-  const { username, password, displayName, isAdmin = false } = body
+  const { password, displayName, isAdmin = false } = body
+  const username = (body.username ?? '').toLowerCase().trim()
 
   if (!username || !password) {
     return NextResponse.json({ error: 'Username and password required' }, { status: 400 })
