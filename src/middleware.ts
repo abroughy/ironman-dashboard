@@ -31,6 +31,13 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Non-admins cannot access /admin routes
+  if (pathname.startsWith('/admin') && !session.isAdmin) {
+    const url = req.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url)
+  }
+
   return NextResponse.next()
 }
 

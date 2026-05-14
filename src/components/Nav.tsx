@@ -43,8 +43,14 @@ const BrainIcon = () => (
     <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
   </svg>
 )
+const AdminIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="8" r="4"/><path d="M6 20v-1a6 6 0 0 1 12 0v1"/>
+    <path d="M17 14l1.5 1.5L21 13"/>
+  </svg>
+)
 
-const links = [
+const BASE_LINKS = [
   { href: '/', label: 'Dashboard', icon: <HomeIcon /> },
   { href: '/sessions', label: 'Sessions', icon: <ListIcon /> },
   { href: '/plan', label: 'Plan', icon: <CalendarIcon /> },
@@ -53,8 +59,12 @@ const links = [
   { href: '/suggestions', label: 'Coaching', icon: <BrainIcon /> },
 ]
 
-export default function Nav() {
+const ADMIN_LINK = { href: '/admin', label: 'Admin', icon: <AdminIcon /> }
+
+export default function Nav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname()
+  const links = isAdmin ? [...BASE_LINKS, ADMIN_LINK] : BASE_LINKS
+
   return (
     <>
       {/* Desktop top nav */}
