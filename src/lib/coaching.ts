@@ -18,12 +18,12 @@ function startOfWeek(date: Date): Date {
   return d
 }
 
-export async function generateWeeklySummary(): Promise<CoachingSummaryContent> {
+export async function generateWeeklySummary(userId: string): Promise<CoachingSummaryContent> {
   const fourWeeksAgo = new Date()
   fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28)
 
   const sessions = await prisma.session.findMany({
-    where: { date: { gte: fourWeeksAgo } },
+    where: { userId, date: { gte: fourWeeksAgo } },
     orderBy: { date: 'desc' },
   })
 
@@ -118,12 +118,10 @@ Respond with this exact JSON structure:
   }
 
   const weekStartDate = startOfWeek(now)
-  // TODO Phase 2: scope CoachingSummary to userId
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (prisma.coachingSummary.upsert as any)({
-    where: { weekStart: weekStartDate },
+  await prisma.coachingSummary.upsert({
+    where: { userId_weekStart: { userId, weekStart: weekStartDate } },
     update: { content: JSON.stringify(parsed), generatedAt: new Date() },
-    create: { weekStart: weekStartDate, content: JSON.stringify(parsed) },
+    create: { userId, weekStart: weekStartDate, content: JSON.stringify(parsed) },
   })
 
   return parsed

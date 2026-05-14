@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/db'
 import { config } from '@/lib/config'
 import { generateWeeklySummary } from '@/lib/coaching'
 
@@ -10,8 +11,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   try {
-    const summary = await generateWeeklySummary()
-    return NextResponse.json(summary)
+    const users = await prisma.user.findMany({ select: { id: true } })
+    for (const user of users) {
+      try {
+        await generateWeeklySummary(user.id)
+      } catch (err) {
+        console.error(`Weekly summary failed for user ${user.id}:`, err)
+      }
+    }
+    return NextResponse.json({ ok: true, users: users.length })
   } catch (err) {
     console.error('Weekly summary cron failed', err)
     return NextResponse.json({ error: 'Failed to generate summary' }, { status: 500 })

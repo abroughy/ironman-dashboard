@@ -1,14 +1,17 @@
 import { prisma } from '@/lib/db'
 import { calculateProjection } from '@/lib/projection'
 import { calculateWeeklyVolume } from '@/lib/weeklyVolume'
+import { getSession } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 import DisciplineChart from '@/components/DisciplineChart'
 import FinishProjection from '@/components/FinishProjection'
 import WeeklyVolumeChart from '@/components/WeeklyVolumeChart'
 
-async function getSessionsForProgress() {
+async function getSessionsForProgress(userId: string) {
   return prisma.session.findMany({
+    where: { userId },
     orderBy: { date: 'asc' },
     select: { discipline: true, date: true, durationSecs: true, distanceMetres: true },
   })
@@ -44,7 +47,10 @@ function runDataPoints(sessions: S[]) {
 }
 
 export default async function ProgressPage() {
-  const sessions = await getSessionsForProgress()
+  const session = await getSession()
+  if (!session) redirect('/login')
+
+  const sessions = await getSessionsForProgress(session.userId)
 
   const last8 = (disc: string) => sessions.filter(s => s.discipline === disc).slice(-8)
   const projection = calculateProjection({

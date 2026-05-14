@@ -26,13 +26,11 @@ export async function exchangeCode(code: string) {
     }),
   })
   if (!res.ok) throw new Error(`Strava OAuth exchange failed: ${res.status}`)
-  return res.json() as Promise<{ access_token: string; refresh_token: string; expires_at: number }>
+  return res.json() as Promise<{ access_token: string; refresh_token: string; expires_at: number; athlete?: { id: number } }>
 }
 
-export async function getValidToken(): Promise<string | null> {
-  // TODO Phase 2: find token by userId from session context
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const token = await (prisma.stravaToken.findUnique as any)({ where: { id: 'singleton' } })
+export async function getValidToken(userId: string): Promise<string | null> {
+  const token = await prisma.stravaToken.findUnique({ where: { userId } })
   if (!token) return null
   if (token.expiresAt > new Date()) return token.accessToken
 
@@ -52,10 +50,8 @@ export async function getValidToken(): Promise<string | null> {
     return null
   }
   const data = await res.json() as { access_token: string; refresh_token: string; expires_at: number }
-  // TODO Phase 2: update by userId instead of singleton id
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (prisma.stravaToken.update as any)({
-    where: { id: 'singleton' },
+  await prisma.stravaToken.update({
+    where: { userId },
     data: {
       accessToken: data.access_token,
       refreshToken: data.refresh_token,
@@ -116,8 +112,8 @@ export function mapActivityToSession(activity: StravaActivity) {
   }
 }
 
-export async function syncAllActivities() {
-  const token = await getValidToken()
+export async function syncAllActivities(userId: string) {
+  const token = await getValidToken(userId)
   if (!token) throw new Error('No Strava token')
 
   let page = 1
@@ -133,12 +129,10 @@ export async function syncAllActivities() {
     for (const activity of activities) {
       const mapped = mapActivityToSession(activity)
       if (!mapped) continue
-      // TODO Phase 2: scope to userId
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (prisma.session.upsert as any)({
-        where: { stravaActivityId: mapped.stravaActivityId },
+      await prisma.session.upsert({
+        where: { userId_stravaActivityId: { userId, stravaActivityId: mapped.stravaActivityId } },
         update: {},
-        create: mapped,
+        create: { ...mapped, userId },
       })
       synced++
     }

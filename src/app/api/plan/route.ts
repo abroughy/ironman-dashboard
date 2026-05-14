@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { generateWeekPlan } from '@/lib/plan'
+import { getSessionFromRequest } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  const session = await getSessionFromRequest(request)
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const weekParam = request.nextUrl.searchParams.get('week')
   const weekOffset = parseInt(weekParam ?? '0', 10)
 
@@ -29,6 +33,7 @@ export async function GET(request: NextRequest) {
 
   const sessions = await prisma.session.findMany({
     where: {
+      userId: session.userId,
       date: { gte: from, lte: to },
     },
     select: { id: true, discipline: true, date: true },

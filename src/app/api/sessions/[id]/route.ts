@@ -1,16 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { getSessionFromRequest } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
-  const session = await prisma.session.findUnique({ where: { id: params.id } })
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const authSession = await getSessionFromRequest(req)
+  if (!authSession) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const session = await prisma.session.findUnique({ where: { id: params.id, userId: authSession.userId } })
   if (!session) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   return NextResponse.json(session)
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await prisma.session.findUnique({ where: { id: params.id } })
+  const authSession = await getSessionFromRequest(req)
+  if (!authSession) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const session = await prisma.session.findUnique({ where: { id: params.id, userId: authSession.userId } })
   if (!session) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   if (session.source !== 'manual' && session.source !== 'import') {

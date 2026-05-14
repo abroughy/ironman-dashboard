@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { getSessionFromRequest } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  const session = await getSessionFromRequest(request)
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const params = request.nextUrl.searchParams
   const discipline = params.get('discipline')
   const from = params.get('from')
@@ -12,6 +16,7 @@ export async function GET(request: NextRequest) {
   const pageSize = 20
 
   const where = {
+    userId: session.userId,
     ...(discipline && discipline !== 'all' ? { discipline } : {}),
     ...(from || to
       ? {
@@ -42,6 +47,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const session = await getSessionFromRequest(request)
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const body = await request.json() as {
     discipline: string
     date: string
@@ -62,10 +70,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
   }
 
-  // TODO Phase 2: require auth session and pass userId
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const session = await (prisma.session.create as any)({
+  const created = await prisma.session.create({
     data: {
+      userId: session.userId,
       discipline: body.discipline,
       date,
       durationSecs: body.durationSecs,
@@ -77,5 +84,5 @@ export async function POST(request: NextRequest) {
     },
   })
 
-  return NextResponse.json(session, { status: 201 })
+  return NextResponse.json(created, { status: 201 })
 }

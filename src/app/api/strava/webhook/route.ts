@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
     object_type: string
     object_id: number
     aspect_type: string
+    owner_id: number
     updates?: Record<string, unknown>
   }
 
@@ -34,7 +35,14 @@ export async function POST(request: NextRequest) {
   }
 
   if (body.aspect_type === 'create' || body.aspect_type === 'update') {
-    const token = await getValidToken()
+    // Find which user this Strava athlete belongs to
+    const stravaToken = await prisma.stravaToken.findUnique({
+      where: { stravaAthleteId: String(body.owner_id) },
+      select: { userId: true, accessToken: true, refreshToken: true, expiresAt: true },
+    })
+    if (!stravaToken) return NextResponse.json({ ok: true }) // unknown athlete, ignore
+
+    const token = await getValidToken(stravaToken.userId)
     if (!token) return NextResponse.json({ error: 'No token' }, { status: 500 })
 
     const res = await fetch(`https://www.strava.com/api/v3/activities/${body.object_id}`, {
@@ -46,12 +54,10 @@ export async function POST(request: NextRequest) {
     const mapped = mapActivityToSession(activity)
     if (!mapped) return NextResponse.json({ ok: true })
 
-    // TODO Phase 2: route to correct userId via stravaAthleteId
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (prisma.session.upsert as any)({
-      where: { stravaActivityId: mapped.stravaActivityId },
+    await prisma.session.upsert({
+      where: { userId_stravaActivityId: { userId: stravaToken.userId, stravaActivityId: mapped.stravaActivityId } },
       update: mapped,
-      create: mapped,
+      create: { ...mapped, userId: stravaToken.userId },
     })
   }
 

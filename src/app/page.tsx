@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/db'
 import { config } from '@/lib/config'
+import { getSession } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 import PhaseBanner from '@/components/PhaseBanner'
@@ -8,11 +10,11 @@ import CoachingCard from '@/components/CoachingCard'
 import TrainingLoadCard from '@/components/TrainingLoadCard'
 import type { CoachingSummaryContent } from '@/lib/coaching'
 
-async function getWeekVolume() {
+async function getWeekVolume(userId: string) {
   const weekStart = new Date()
   weekStart.setDate(weekStart.getDate() - weekStart.getDay() + (weekStart.getDay() === 0 ? -6 : 1))
   weekStart.setHours(0, 0, 0, 0)
-  const sessions = await prisma.session.findMany({ where: { date: { gte: weekStart } } })
+  const sessions = await prisma.session.findMany({ where: { userId, date: { gte: weekStart } } })
   const vol = { swim: 0, bike: 0, run: 0 }
   for (const s of sessions) {
     if (s.discipline in vol) vol[s.discipline as keyof typeof vol] += s.distanceMetres
@@ -20,11 +22,11 @@ async function getWeekVolume() {
   return vol
 }
 
-async function getRecentSessions() {
+async function getRecentSessions(userId: string) {
   const sevenDaysAgo = new Date()
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
   return prisma.session.findMany({
-    where: { date: { gte: sevenDaysAgo } },
+    where: { userId, date: { gte: sevenDaysAgo } },
     orderBy: { date: 'desc' },
     select: { id: true, discipline: true, date: true, durationSecs: true, distanceMetres: true, source: true },
   })
@@ -33,11 +35,14 @@ async function getRecentSessions() {
 const disciplineColour = { swim: 'bg-blue-500/20 text-blue-300', bike: 'bg-orange-500/20 text-orange-300', run: 'bg-green-500/20 text-green-300' }
 
 export default async function DashboardPage() {
+  const session = await getSession()
+  if (!session) redirect('/login')
+
   const [weekVol, recentSessions, stravaToken, latestSummary] = await Promise.all([
-    getWeekVolume(),
-    getRecentSessions(),
-    prisma.stravaToken.findUnique({ where: { id: 'singleton' } }),
-    prisma.coachingSummary.findFirst({ orderBy: { generatedAt: 'desc' } }),
+    getWeekVolume(session.userId),
+    getRecentSessions(session.userId),
+    prisma.stravaToken.findUnique({ where: { userId: session.userId } }),
+    prisma.coachingSummary.findFirst({ where: { userId: session.userId }, orderBy: { generatedAt: 'desc' } }),
   ])
 
   const summaryContent = latestSummary

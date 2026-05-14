@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/db'
 import { runRules } from '@/lib/rules'
+import { getSession } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 import { weeksToRace } from '@/lib/config'
@@ -8,7 +10,7 @@ import AlertBanner from '@/components/AlertBanner'
 import CoachingCard from '@/components/CoachingCard'
 import type { CoachingSummaryContent } from '@/lib/coaching'
 
-async function getSuggestionData() {
+async function getSuggestionData(userId: string) {
   const now = new Date()
   const weekStart = new Date(now)
   weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7))
@@ -16,7 +18,7 @@ async function getSuggestionData() {
   const lastWeekStart = new Date(weekStart)
   lastWeekStart.setDate(lastWeekStart.getDate() - 7)
 
-  const sessions = await prisma.session.findMany({ orderBy: { date: 'desc' }, take: 100 })
+  const sessions = await prisma.session.findMany({ where: { userId }, orderBy: { date: 'desc' }, take: 100 })
 
   function weekVol(from: Date, to: Date) {
     return ['swim', 'bike', 'run'].reduce((acc, d) => ({
@@ -33,7 +35,7 @@ async function getSuggestionData() {
     lastWeekVolume: weekVol(lastWeekStart, weekStart),
   })
 
-  const latestSummary = await prisma.coachingSummary.findFirst({ orderBy: { generatedAt: 'desc' } })
+  const latestSummary = await prisma.coachingSummary.findFirst({ where: { userId }, orderBy: { generatedAt: 'desc' } })
   const summaryContent = latestSummary
     ? { ...(JSON.parse(latestSummary.content) as CoachingSummaryContent), generatedAt: latestSummary.generatedAt.toISOString() }
     : null
@@ -54,7 +56,10 @@ async function getSuggestionData() {
 }
 
 export default async function SuggestionsPage() {
-  const { alerts, summaryContent, discStats } = await getSuggestionData()
+  const session = await getSession()
+  if (!session) redirect('/login')
+
+  const { alerts, summaryContent, discStats } = await getSuggestionData(session.userId)
 
   return (
     <div className="space-y-4">
