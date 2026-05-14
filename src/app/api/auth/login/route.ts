@@ -27,8 +27,6 @@ export async function POST(req: NextRequest) {
     username: user.username,
     isAdmin: user.isAdmin,
     onboarded: user.onboarded,
-    raceType: user.raceType,
-    raceDate: user.raceDate?.toISOString() ?? null,
   })
 
   const res = NextResponse.json({ ok: true, onboarded: user.onboarded })

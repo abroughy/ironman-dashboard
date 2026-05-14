@@ -1,5 +1,5 @@
 import { WORKOUTS, Workout } from './workouts'
-import { weeksToRace } from './config'
+import { weeksToRace, weeksToRaceFromDate } from './config'
 
 export interface PlannedDay {
   date: Date
@@ -131,13 +131,13 @@ function runOnlyTaperTemplate(): DayTemplate[] {
 
 // ─── main export ─────────────────────────────────────────────────────────────
 
-export function generateWeekPlan(weekOffset: number, sessions: SessionLike[], raceType = '70.3'): WeekPlan {
+export function generateWeekPlan(weekOffset: number, sessions: SessionLike[], raceType = '70.3', raceDateOverride?: Date): WeekPlan {
   const now = new Date()
   const thisMonday = mondayOf(now)
   const weekStart = addDays(thisMonday, weekOffset * 7)
 
   // Approximate week number since 52 weeks before race (training start)
-  const weeksLeft = weeksToRace()
+  const weeksLeft = raceDateOverride ? weeksToRaceFromDate(raceDateOverride) : weeksToRace()
   // weekNumber: 0 = first week of training, increases each week
   const weekNumber = Math.max(0, 52 - weeksLeft - weekOffset)
 

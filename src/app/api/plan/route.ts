@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { generateWeekPlan } from '@/lib/plan'
 import { getSessionFromRequest } from '@/lib/auth'
+import { getNextRace } from '@/lib/races'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,15 +32,19 @@ export async function GET(request: NextRequest) {
   const to = new Date(monday)
   to.setDate(to.getDate() + 9) // 7 days + 3 days buffer
 
-  const sessions = await prisma.session.findMany({
-    where: {
-      userId: session.userId,
-      date: { gte: from, lte: to },
-    },
-    select: { id: true, discipline: true, date: true },
-  })
+  const [sessions, nextRace] = await Promise.all([
+    prisma.session.findMany({
+      where: {
+        userId: session.userId,
+        date: { gte: from, lte: to },
+      },
+      select: { id: true, discipline: true, date: true },
+    }),
+    getNextRace(session.userId),
+  ])
 
-  const plan = generateWeekPlan(weekOffset, sessions, session.raceType)
+  const raceType = nextRace?.raceType ?? '70.3'
+  const plan = generateWeekPlan(weekOffset, sessions, raceType, nextRace?.date)
 
   // Serialize dates to ISO strings for JSON transport
   const serialised = {

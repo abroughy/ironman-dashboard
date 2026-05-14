@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { raceType, raceDate } = await req.json()
+  const { raceName, raceType, raceDate } = await req.json()
 
   if (!RACE_CONFIGS[raceType as keyof typeof RACE_CONFIGS]) {
     return NextResponse.json({ error: 'Invalid race type' }, { status: 400 })
@@ -20,16 +20,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid race date' }, { status: 400 })
   }
 
-  await prisma.user.update({
-    where: { id: session.userId },
-    data: { raceType, raceDate: date, onboarded: true },
+  const name = raceName?.trim() || RACE_CONFIGS[raceType as keyof typeof RACE_CONFIGS].label
+
+  // Create the first Race record
+  await prisma.race.create({
+    data: {
+      userId: session.userId,
+      name,
+      raceType,
+      date,
+      priority: 'A',
+    },
   })
 
-  // Re-sign JWT with updated info
+  // Mark user as onboarded
+  await prisma.user.update({
+    where: { id: session.userId },
+    data: { onboarded: true },
+  })
+
+  // Re-sign JWT with updated onboarded flag
   const newToken = await signSession({
     ...session,
-    raceType,
-    raceDate: date.toISOString(),
     onboarded: true,
   })
 

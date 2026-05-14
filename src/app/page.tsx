@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db'
 import { weeklyTargetsForRace } from '@/lib/config'
 import { getSession } from '@/lib/auth'
+import { getNextRace } from '@/lib/races'
 import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
@@ -38,18 +39,19 @@ export default async function DashboardPage() {
   const session = await getSession()
   if (!session) redirect('/login')
 
-  const [weekVol, recentSessions, stravaToken, latestSummary] = await Promise.all([
+  const [weekVol, recentSessions, stravaToken, latestSummary, nextRace] = await Promise.all([
     getWeekVolume(session.userId),
     getRecentSessions(session.userId),
     prisma.stravaToken.findUnique({ where: { userId: session.userId } }),
     prisma.coachingSummary.findFirst({ where: { userId: session.userId }, orderBy: { generatedAt: 'desc' } }),
+    getNextRace(session.userId),
   ])
 
   const summaryContent = latestSummary
     ? { ...(JSON.parse(latestSummary.content) as CoachingSummaryContent), generatedAt: latestSummary.generatedAt.toISOString() }
     : null
 
-  const targets = weeklyTargetsForRace(session!.raceType)
+  const targets = weeklyTargetsForRace(nextRace?.raceType ?? '70.3')
 
   return (
     <div className="space-y-6">

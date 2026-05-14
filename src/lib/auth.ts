@@ -13,8 +13,6 @@ export interface SessionPayload {
   username: string
   isAdmin: boolean
   onboarded: boolean
-  raceType: string
-  raceDate: string | null
 }
 
 export async function signSession(payload: SessionPayload): Promise<string> {

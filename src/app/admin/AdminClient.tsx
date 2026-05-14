@@ -99,18 +99,6 @@ export default function AdminClient({ currentUserId }: { currentUserId: string }
     }
   }
 
-  async function resetOnboarding(id: string) {
-    setActionLoading(id + '-reset')
-    await fetch(`/api/admin/users/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ onboarded: false }),
-    })
-    setActionLoading(null)
-    showToast('Onboarding reset — user will be prompted on next login')
-    fetchUsers()
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -281,16 +269,6 @@ export default function AdminClient({ currentUserId }: { currentUserId: string }
 
                 {user.id !== currentUserId && (
                   <div className="flex items-center gap-2 shrink-0">
-                    {user.onboarded && (
-                      <button
-                        onClick={() => resetOnboarding(user.id)}
-                        disabled={actionLoading === user.id + '-reset'}
-                        title="Reset onboarding — user will redo race setup on next login"
-                        className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded-lg border border-white/5 hover:border-white/10 transition-colors disabled:opacity-50"
-                      >
-                        {actionLoading === user.id + '-reset' ? '…' : 'Reset setup'}
-                      </button>
-                    )}
                     <button
                       onClick={() => setDeleteConfirm(user.id)}
                       title="Delete user"

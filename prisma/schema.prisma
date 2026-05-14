@@ -20,6 +20,23 @@ model User {
   sessions          Session[]
   stravaToken       StravaToken?
   coachingSummaries CoachingSummary[]
+  races             Race[]
+}
+
+model Race {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  raceType  String
+  date      DateTime
+  priority  String   @default("A")   // 'A' | 'B' | 'C'
+  notes     String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, date])
 }
 
 model Session {

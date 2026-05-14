@@ -49,10 +49,17 @@ const AdminIcon = () => (
     <path d="M17 14l1.5 1.5L21 13"/>
   </svg>
 )
+const FlagIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+    <line x1="4" y1="22" x2="4" y2="15"/>
+  </svg>
+)
 
 const BASE_LINKS = [
   { href: '/', label: 'Dashboard', icon: <HomeIcon /> },
   { href: '/sessions', label: 'Sessions', icon: <ListIcon /> },
+  { href: '/races', label: 'Races', icon: <FlagIcon /> },
   { href: '/plan', label: 'Plan', icon: <CalendarIcon /> },
   { href: '/progress', label: 'Progress', icon: <ChartIcon /> },
   { href: '/pbs', label: 'PBs', icon: <TrophyIcon /> },

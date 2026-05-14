@@ -4,8 +4,8 @@ import { getSession } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
-import { weeksToRace } from '@/lib/config'
-import { config } from '@/lib/config'
+import { weeksToRaceFromDate, weeklyTargetsForRace } from '@/lib/config'
+import { getNextRace } from '@/lib/races'
 import AlertBanner from '@/components/AlertBanner'
 import CoachingCard from '@/components/CoachingCard'
 import type { CoachingSummaryContent } from '@/lib/coaching'
@@ -18,7 +18,10 @@ async function getSuggestionData(userId: string) {
   const lastWeekStart = new Date(weekStart)
   lastWeekStart.setDate(lastWeekStart.getDate() - 7)
 
-  const sessions = await prisma.session.findMany({ where: { userId }, orderBy: { date: 'desc' }, take: 100 })
+  const [sessions, nextRace] = await Promise.all([
+    prisma.session.findMany({ where: { userId }, orderBy: { date: 'desc' }, take: 100 }),
+    getNextRace(userId),
+  ])
 
   function weekVol(from: Date, to: Date) {
     return ['swim', 'bike', 'run'].reduce((acc, d) => ({
@@ -28,9 +31,11 @@ async function getSuggestionData(userId: string) {
     }), { swim: 0, bike: 0, run: 0 })
   }
 
+  const weeksToRace = nextRace ? weeksToRaceFromDate(nextRace.date) : 0
+
   const alerts = runRules({
     sessions: sessions.map(s => ({ ...s, date: s.date })),
-    weeksToRace: weeksToRace(),
+    weeksToRace,
     currentWeekVolume: weekVol(weekStart, now),
     lastWeekVolume: weekVol(lastWeekStart, weekStart),
   })
@@ -41,6 +46,7 @@ async function getSuggestionData(userId: string) {
     : null
 
   // Per-discipline stats
+  const weeklyTargets = weeklyTargetsForRace(nextRace?.raceType ?? '70.3')
   const discStats = ['swim', 'bike', 'run'].map(d => {
     const disc = sessions.filter(s => s.discipline === d)
     const thisWeek = sessions.filter(s => s.discipline === d && s.date >= weekStart)
@@ -48,7 +54,7 @@ async function getSuggestionData(userId: string) {
       discipline: d,
       totalSessions: disc.length,
       thisWeekKm: thisWeek.reduce((sum, s) => sum + s.distanceMetres, 0) / 1000,
-      weeklyTargetKm: config.weeklyTargets[d as keyof typeof config.weeklyTargets] / 1000,
+      weeklyTargetKm: weeklyTargets[d as keyof typeof weeklyTargets] / 1000,
     }
   })
 
