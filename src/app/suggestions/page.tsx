@@ -47,7 +47,7 @@ async function getSuggestionData(userId: string) {
     : null
 
   // Per-discipline stats
-  const weeklyTargets = weeklyTargetsForRace(nextRace?.raceType ?? '70.3')
+  const weeklyTargets = weeklyTargetsForRace(nextRace?.raceType ?? '70.3', nextRace?.crossTraining ?? false)
   const discStats = ['swim', 'bike', 'run'].map(d => {
     const disc = sessions.filter(s => s.discipline === d)
     const thisWeek = sessions.filter(s => s.discipline === d && s.date >= weekStart)

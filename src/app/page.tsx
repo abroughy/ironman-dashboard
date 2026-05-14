@@ -53,7 +53,8 @@ export default async function DashboardPage() {
     : null
 
   const raceType = nextRace?.raceType ?? 'fitness'
-  const targets = weeklyTargetsForRace(raceType)
+  const crossTraining = nextRace?.crossTraining ?? false
+  const targets = weeklyTargetsForRace(raceType, crossTraining)
   const weeksLeft = nextRace ? weeksToRaceFromDate(nextRace.date) : null
   const phase = weeksLeft !== null ? currentPhaseFromWeeks(weeksLeft) : 'Build'
   const raceLabel = getRaceConfig(raceType).label

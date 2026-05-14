@@ -129,6 +129,33 @@ function runOnlyTaperTemplate(): DayTemplate[] {
   ]
 }
 
+// ─── run + cross-train templates ─────────────────────────────────────────────
+
+function runCrossTrainBuildTemplate(weekNum: number): DayTemplate[] {
+  const techSwims = ['swim-catch-up', 'swim-fingertip-drag', 'swim-fist-drill', 'swim-kick-drill']
+  return [
+    [techSwims[weekNum % techSwims.length]], // Mon — swim (low impact active recovery)
+    ['run-easy'],                             // Tue
+    ['run-intervals'],                        // Wed
+    ['bike-endurance'],                       // Thu — bike cross-train
+    [],                                       // Fri — REST
+    ['run-long'],                             // Sat
+    weekNum % 2 === 0 ? ['run-tempo'] : ['run-recovery'], // Sun
+  ]
+}
+
+function runCrossTrainTaperTemplate(): DayTemplate[] {
+  return [
+    ['swim-bilateral'],  // Mon — easy swim
+    ['run-easy'],        // Tue
+    ['run-intervals'],   // Wed (short)
+    ['bike-endurance'],  // Thu — light spin
+    [],                  // Fri — REST
+    ['run-easy'],        // Sat
+    ['run-recovery'],    // Sun
+  ]
+}
+
 // ─── general fitness template (no race target) ───────────────────────────────
 
 function fitnessTemplate(weekNum: number): DayTemplate[] {
@@ -146,7 +173,7 @@ function fitnessTemplate(weekNum: number): DayTemplate[] {
 
 // ─── main export ─────────────────────────────────────────────────────────────
 
-export function generateWeekPlan(weekOffset: number, sessions: SessionLike[], raceType = '70.3', raceDateOverride?: Date): WeekPlan {
+export function generateWeekPlan(weekOffset: number, sessions: SessionLike[], raceType = '70.3', raceDateOverride?: Date, crossTraining = false): WeekPlan {
   const now = new Date()
   const thisMonday = mondayOf(now)
   const weekStart = addDays(thisMonday, weekOffset * 7)
@@ -168,13 +195,25 @@ export function generateWeekPlan(weekOffset: number, sessions: SessionLike[], ra
     template = fitnessTemplate(weekNumber)
   } else if (weeksLeft - weekOffset > 12) {
     phase = 'Build'
-    template = isRunOnly ? runOnlyBuildTemplate(weekNumber) : buildTemplate(weekNumber)
+    if (isRunOnly) {
+      template = crossTraining ? runCrossTrainBuildTemplate(weekNumber) : runOnlyBuildTemplate(weekNumber)
+    } else {
+      template = buildTemplate(weekNumber)
+    }
   } else if (weeksLeft - weekOffset > 6) {
     phase = 'Peak'
-    template = isRunOnly ? runOnlyBuildTemplate(weekNumber) : peakTemplate(weekNumber)
+    if (isRunOnly) {
+      template = crossTraining ? runCrossTrainBuildTemplate(weekNumber) : runOnlyBuildTemplate(weekNumber)
+    } else {
+      template = peakTemplate(weekNumber)
+    }
   } else {
     phase = 'Taper'
-    template = isRunOnly ? runOnlyTaperTemplate() : taperTemplate()
+    if (isRunOnly) {
+      template = crossTraining ? runCrossTrainTaperTemplate() : runOnlyTaperTemplate()
+    } else {
+      template = taperTemplate()
+    }
   }
 
   const days: PlannedDay[] = template.map((workoutIds, dayIndex) => {

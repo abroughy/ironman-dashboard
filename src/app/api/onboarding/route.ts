@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   const session = await getSessionFromRequest(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { raceName, raceType, raceDate, priority = 'A' } = await req.json()
+  const { raceName, raceType, raceDate, priority = 'A', crossTraining = false } = await req.json()
 
   if (!RACE_CONFIGS[raceType as keyof typeof RACE_CONFIGS]) {
     return NextResponse.json({ error: 'Invalid race type' }, { status: 400 })
@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
         raceType,
         date,
         priority,
+        crossTraining: Boolean(crossTraining),
       },
     })
   }

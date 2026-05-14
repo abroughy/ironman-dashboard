@@ -44,7 +44,8 @@ export async function GET(request: NextRequest) {
   ])
 
   const raceType = nextRace?.raceType ?? '70.3'
-  const plan = generateWeekPlan(weekOffset, sessions, raceType, nextRace?.date)
+  const crossTraining = nextRace?.crossTraining ?? false
+  const plan = generateWeekPlan(weekOffset, sessions, raceType, nextRace?.date, crossTraining)
 
   // Serialize dates to ISO strings for JSON transport
   const serialised = {

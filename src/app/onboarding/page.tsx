@@ -17,9 +17,12 @@ const PRIORITY_OPTIONS = [
   { value: 'C', label: 'C — Fun / fitness test', sub: 'No special prep', colour: 'border-gray-500 bg-gray-500/10 text-gray-400' },
 ]
 
+const RUN_RACE_TYPES = ['marathon', 'half-marathon']
+
 export default function OnboardingPage() {
   const [step, setStep] = useState(1)
   const [raceType, setRaceType] = useState('')
+  const [crossTraining, setCrossTraining] = useState(false)
   const [raceName, setRaceName] = useState('')
   const [raceDate, setRaceDate] = useState('')
   const [priority, setPriority] = useState('A')
@@ -54,7 +57,7 @@ export default function OnboardingPage() {
       const res = await fetch('/api/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ raceName, raceType, raceDate, priority }),
+        body: JSON.stringify({ raceName, raceType, raceDate, priority, crossTraining }),
       })
       if (!res.ok) {
         const d = await res.json()
@@ -90,6 +93,9 @@ export default function OnboardingPage() {
                     if (opt.type === 'fitness') {
                       // No race details needed — submit immediately
                       handleFitnessSubmit()
+                    } else if (RUN_RACE_TYPES.includes(opt.type)) {
+                      // Show cross-training question before race details
+                      setStep(1.5)
                     } else {
                       setStep(2)
                     }
@@ -109,9 +115,37 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {step === 2 && (
+        {step === 1.5 && (
           <div>
             <button onClick={() => setStep(1)} className="text-gray-500 hover:text-gray-300 text-sm mb-5 flex items-center gap-1">
+              ← Back
+            </button>
+            <h2 className="text-lg font-semibold text-white mb-1">How do you train?</h2>
+            <p className="text-gray-500 text-sm mb-5">Your plan will be tailored to your approach</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => { setCrossTraining(false); setStep(2) }}
+                className="text-left p-4 rounded-2xl border border-white/10 bg-gray-900/60 hover:border-white/20 transition-all"
+              >
+                <div className="text-2xl mb-2">🏃</div>
+                <div className="font-semibold text-white text-sm">Run only</div>
+                <div className="text-xs text-gray-500 mt-0.5">Just running — intervals, tempo, long runs</div>
+              </button>
+              <button
+                onClick={() => { setCrossTraining(true); setStep(2) }}
+                className="text-left p-4 rounded-2xl border border-white/10 bg-gray-900/60 hover:border-white/20 transition-all"
+              >
+                <div className="text-2xl mb-2">🏊🚴🏃</div>
+                <div className="font-semibold text-white text-sm">Run + cross-train</div>
+                <div className="text-xs text-gray-500 mt-0.5">Running plus swim &amp; bike for variety and injury prevention</div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div>
+            <button onClick={() => setStep(RUN_RACE_TYPES.includes(raceType) ? 1.5 : 1)} className="text-gray-500 hover:text-gray-300 text-sm mb-5 flex items-center gap-1">
               ← Back
             </button>
             <h2 className="text-lg font-semibold text-white mb-1">Tell us about your race</h2>

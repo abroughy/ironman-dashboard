@@ -30,7 +30,8 @@ model Race {
   raceType  String
   date      DateTime
   priority  String   @default("A")   // 'A' | 'B' | 'C'
-  notes     String?
+  notes         String?
+  crossTraining Boolean  @default(false)
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

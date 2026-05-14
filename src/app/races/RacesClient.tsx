@@ -9,6 +9,7 @@ interface Race {
   date: string
   priority: string
   notes: string | null
+  crossTraining: boolean
 }
 
 const RACE_OPTIONS = [
@@ -44,7 +45,7 @@ function getRaceLabel(raceType: string) {
   return RACE_CONFIGS[raceType as keyof typeof RACE_CONFIGS]?.label ?? raceType
 }
 
-const EMPTY_FORM = { name: '', raceType: '', date: '', priority: 'A', notes: '' }
+const EMPTY_FORM = { name: '', raceType: '', date: '', priority: 'A', notes: '', crossTraining: false }
 
 export default function RacesClient() {
   const [races, setRaces] = useState<Race[]>([])
@@ -87,6 +88,7 @@ export default function RacesClient() {
       date: race.date.split('T')[0],
       priority: race.priority,
       notes: race.notes ?? '',
+      crossTraining: race.crossTraining ?? false,
     })
     setFormError('')
     setShowModal(true)
@@ -117,6 +119,7 @@ export default function RacesClient() {
           date: form.date,
           priority: form.priority,
           notes: form.notes.trim() || null,
+          crossTraining: form.crossTraining,
         }),
       })
       if (!res.ok) {
@@ -327,6 +330,41 @@ export default function RacesClient() {
                 ))}
               </div>
             </div>
+
+            {/* Cross-training toggle — shown only for run-type races */}
+            {(form.raceType === 'marathon' || form.raceType === 'half-marathon') && (
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Training style
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, crossTraining: false }))}
+                    className={`px-3 py-2.5 rounded-xl border text-sm transition-all ${
+                      !form.crossTraining
+                        ? 'border-orange-500 bg-orange-500/10 text-orange-400'
+                        : 'border-white/10 bg-gray-800/40 text-gray-400 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="font-medium">🏃 Run only</div>
+                    <div className="text-xs text-gray-500 mt-0.5">Pure running plan</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, crossTraining: true }))}
+                    className={`px-3 py-2.5 rounded-xl border text-sm transition-all ${
+                      form.crossTraining
+                        ? 'border-blue-400 bg-blue-400/10 text-blue-400'
+                        : 'border-white/10 bg-gray-800/40 text-gray-400 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="font-medium">🏊🚴 Cross-train</div>
+                    <div className="text-xs text-gray-500 mt-0.5">Run + swim &amp; bike</div>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Notes */}
             <div>

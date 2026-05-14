@@ -19,6 +19,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       ...(body.date !== undefined ? { date: new Date(body.date) } : {}),
       ...(body.priority !== undefined ? { priority: body.priority } : {}),
       ...(body.notes !== undefined ? { notes: body.notes } : {}),
+      ...(body.crossTraining !== undefined ? { crossTraining: Boolean(body.crossTraining) } : {}),
     },
   })
   return NextResponse.json(updated)

@@ -7,6 +7,7 @@ export interface RaceSummary {
   date: Date
   priority: string
   notes: string | null
+  crossTraining: boolean
 }
 
 /** Returns the next upcoming race for a user (soonest future date), or null */

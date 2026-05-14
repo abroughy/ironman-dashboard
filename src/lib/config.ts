@@ -42,7 +42,11 @@ export function currentPhaseFromWeeks(weeks: number): 'Build' | 'Peak' | 'Taper'
   return 'Race Week'
 }
 
-export function weeklyTargetsForRace(raceType: string): { swim: number; bike: number; run: number } {
+export function weeklyTargetsForRace(raceType: string, crossTraining = false): { swim: number; bike: number; run: number } {
+  if (crossTraining && (raceType === 'marathon' || raceType === 'half-marathon')) {
+    const runTarget = raceType === 'marathon' ? 50000 : 35000
+    return { swim: 2000, bike: 40000, run: runTarget }
+  }
   switch (raceType) {
     case '140.6': return { swim: 8000, bike: 250000, run: 50000 }
     case 'olympic': return { swim: 3000, bike: 80000, run: 20000 }
