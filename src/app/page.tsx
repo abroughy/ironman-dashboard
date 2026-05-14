@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/db'
-import { weeklyTargetsForRace } from '@/lib/config'
+import { weeklyTargetsForRace, weeksToRaceFromDate, currentPhaseFromWeeks } from '@/lib/config'
 import { getSession } from '@/lib/auth'
 import { getNextRace } from '@/lib/races'
+import { getRaceConfig } from '@/lib/raceConfig'
 import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
@@ -51,7 +52,11 @@ export default async function DashboardPage() {
     ? { ...(JSON.parse(latestSummary.content) as CoachingSummaryContent), generatedAt: latestSummary.generatedAt.toISOString() }
     : null
 
-  const targets = weeklyTargetsForRace(nextRace?.raceType ?? '70.3')
+  const raceType = nextRace?.raceType ?? 'fitness'
+  const targets = weeklyTargetsForRace(raceType)
+  const weeksLeft = nextRace ? weeksToRaceFromDate(nextRace.date) : null
+  const phase = weeksLeft !== null ? currentPhaseFromWeeks(weeksLeft) : 'Build'
+  const raceLabel = getRaceConfig(raceType).label
 
   return (
     <div className="space-y-6">
@@ -67,7 +72,25 @@ export default async function DashboardPage() {
       )}
 
       <section>
-        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">This week</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">This week</h2>
+          <div className="flex items-center gap-1.5 text-xs text-gray-600">
+            <span>{raceLabel}</span>
+            <span>·</span>
+            <span>{phase} phase</span>
+            {weeksLeft !== null && (
+              <>
+                <span>·</span>
+                <span>{weeksLeft}w to race</span>
+              </>
+            )}
+            <a href="/suggestions" className="ml-1 text-orange-400/60 hover:text-orange-400 transition-colors" title="Explain my targets">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </a>
+          </div>
+        </div>
         <div className="bg-gray-900/60 rounded-2xl p-6 border border-white/5 flex justify-around">
           <LoadRing discipline="swim" currentMetres={weekVol.swim} targetMetres={targets.swim} />
           <LoadRing discipline="bike" currentMetres={weekVol.bike} targetMetres={targets.bike} />

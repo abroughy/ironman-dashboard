@@ -8,6 +8,7 @@ import { weeksToRaceFromDate, weeklyTargetsForRace } from '@/lib/config'
 import { getNextRace } from '@/lib/races'
 import AlertBanner from '@/components/AlertBanner'
 import CoachingCard from '@/components/CoachingCard'
+import TargetExplainer from '@/components/TargetExplainer'
 import type { CoachingSummaryContent } from '@/lib/coaching'
 
 async function getSuggestionData(userId: string) {
@@ -77,6 +78,8 @@ export default async function SuggestionsPage() {
       </section>
 
       <CoachingCard summary={summaryContent} />
+
+      <TargetExplainer />
 
       <section>
         <h2 className="text-sm font-medium text-gray-400 mb-2">This week by discipline</h2>
