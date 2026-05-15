@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
   const session = await getSessionFromRequest(request)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const days = parseInt(request.nextUrl.searchParams.get('days') ?? '14', 10)
+  const days = parseInt(request.nextUrl.searchParams.get('days') ?? '14', 10) || 14
   const since = new Date()
   since.setDate(since.getDate() - days)
   since.setUTCHours(0, 0, 0, 0)
