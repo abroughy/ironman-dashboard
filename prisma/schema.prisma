@@ -103,5 +103,4 @@ model WellnessLog {
 
   @@unique([userId, date])
   @@index([userId])
-  @@index([userId, date])
 }
