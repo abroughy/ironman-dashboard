@@ -21,6 +21,7 @@ model User {
   stravaToken       StravaToken?
   coachingSummaries CoachingSummary[]
   races             Race[]
+  wellnessLogs      WellnessLog[]
 }
 
 model Race {
@@ -86,4 +87,21 @@ model CoachingSummary {
 
   @@unique([userId, weekStart])
   @@index([userId])
+}
+
+model WellnessLog {
+  id         String   @id @default(cuid())
+  userId     String
+  date       DateTime // midnight UTC — represents the calendar day
+  sleepHours Float
+  soreness   Int      // 1–5 (1 = no soreness, 5 = very sore)
+  energy     Int      // 1–5 (1 = exhausted, 5 = great)
+  score      Int      // computed composite 0–100
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([userId, date])
 }
