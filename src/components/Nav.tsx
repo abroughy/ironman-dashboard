@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import LogoutButton from '@/components/LogoutButton'
 
 const CalendarIcon = () => (
@@ -97,6 +98,18 @@ const ADMIN_LINK = { href: '/admin', label: 'Admin', icon: <AdminIcon /> }
 export default function Nav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname()
   const links = isAdmin ? [...BASE_LINKS, ADMIN_LINK] : BASE_LINKS
+  const [open, setOpen] = useState(false)
+
+  // Close drawer on route change
+  useEffect(() => { setOpen(false) }, [pathname])
+
+  // Prevent body scroll when drawer open
+  useEffect(() => {
+    document.body.style.overflow = open ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [open])
+
+  const currentLink = links.find(l => l.href === pathname) ?? links[0]
 
   return (
     <>
@@ -116,22 +129,72 @@ export default function Nav({ isAdmin = false }: { isAdmin?: boolean }) {
           <LogoutButton />
         </div>
       </nav>
-      {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900/90 backdrop-blur-md border-t border-white/5 flex z-50">
-        {links.map(l => (
-          <Link
-            key={l.href}
-            href={l.href}
-            className={`flex-1 flex flex-col items-center py-2 text-xs ${pathname === l.href ? 'text-orange-400' : 'text-gray-500'}`}
-          >
-            {l.icon}
-            {pathname === l.href && (
-              <span className="w-1 h-1 rounded-full bg-orange-400 mx-auto mt-0.5" />
-            )}
-            {l.label}
-          </Link>
-        ))}
+
+      {/* Mobile top bar */}
+      <nav className="md:hidden fixed top-0 left-0 right-0 z-50 bg-gray-950/95 backdrop-blur-md border-b border-white/5 flex items-center px-4 h-14">
+        <span className="text-orange-400 font-bold text-base tracking-tight">⚡ 70.3</span>
+        <span className="ml-3 text-white text-sm font-medium">{currentLink.label}</span>
+        <button
+          onClick={() => setOpen(true)}
+          className="ml-auto p-2 text-gray-400 hover:text-white transition-colors"
+          aria-label="Open menu"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
       </nav>
+
+      {/* Mobile drawer overlay */}
+      {open && (
+        <div
+          className="md:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      {/* Mobile drawer */}
+      <div className={`md:hidden fixed top-0 right-0 bottom-0 z-50 w-72 bg-gray-950 border-l border-white/5 flex flex-col transition-transform duration-300 ease-in-out ${open ? 'translate-x-0' : 'translate-x-full'}`}>
+        {/* Drawer header */}
+        <div className="flex items-center justify-between px-5 h-14 border-b border-white/5">
+          <span className="text-orange-400 font-bold text-base tracking-tight">⚡ 70.3</span>
+          <button
+            onClick={() => setOpen(false)}
+            className="p-2 text-gray-400 hover:text-white transition-colors"
+            aria-label="Close menu"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Links */}
+        <div className="flex-1 overflow-y-auto py-3">
+          {links.map(l => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className={`flex items-center gap-3 px-5 py-3.5 text-sm font-medium transition-colors ${
+                pathname === l.href
+                  ? 'text-orange-400 bg-orange-500/10'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <span className={pathname === l.href ? 'text-orange-400' : 'text-gray-600'}>{l.icon}</span>
+              {l.label}
+              {pathname === l.href && (
+                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-400" />
+              )}
+            </Link>
+          ))}
+        </div>
+
+        {/* Logout at bottom */}
+        <div className="px-5 py-5 border-t border-white/5">
+          <LogoutButton />
+        </div>
+      </div>
     </>
   )
 }

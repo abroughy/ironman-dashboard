@@ -19,7 +19,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-gradient-to-br from-gray-950 via-gray-950 to-slate-900 text-white min-h-screen`}>
         <Nav isAdmin={isAdmin} />
-        <main className="max-w-5xl mx-auto px-4 py-6 pb-20 md:pb-6">
+        <main className="max-w-5xl mx-auto px-4 py-6 pt-20 md:pt-6">
           {children}
         </main>
       </body>
