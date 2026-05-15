@@ -40,26 +40,29 @@ export default function WellnessWidget({ todayLog, showWarning }: WellnessWidget
   }
 
   const RatingButtons = ({
-    value, onChange, label,
-  }: { value: number | null; onChange: (v: number) => void; label: string }) => (
-    <div className="flex items-center justify-between">
-      <span className="text-gray-300 text-xs">{label}</span>
-      <div className="flex gap-1">
-        {[1, 2, 3, 4, 5].map(n => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => onChange(n)}
-            className={`w-7 h-7 rounded text-xs font-medium transition-colors ${
-              value === n
-                ? 'bg-orange-500 text-white'
-                : 'bg-gray-800 text-gray-400 border border-gray-700 hover:border-gray-500'
-            }`}
-          >
-            {n}
-          </button>
-        ))}
+    value, onChange, label, hint,
+  }: { value: number | null; onChange: (v: number) => void; label: string; hint?: string }) => (
+    <div>
+      <div className="flex items-center justify-between">
+        <span className="text-gray-300 text-xs">{label}</span>
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5].map(n => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => onChange(n)}
+              className={`w-7 h-7 rounded text-xs font-medium transition-colors ${
+                value === n
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-800 text-gray-400 border border-gray-700 hover:border-gray-500'
+              }`}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
       </div>
+      {hint && <p className="text-[10px] text-gray-600 text-right mt-0.5">{hint}</p>}
     </div>
   )
 
@@ -81,8 +84,8 @@ export default function WellnessWidget({ todayLog, showWarning }: WellnessWidget
               className="w-20 bg-gray-800 border border-gray-700 text-white text-xs rounded-lg px-2 py-1.5 text-right"
             />
           </div>
-          <RatingButtons value={soreness} onChange={setSoreness} label="💪 Soreness" />
-          <RatingButtons value={energy} onChange={setEnergy} label="⚡ Energy" />
+          <RatingButtons value={soreness} onChange={setSoreness} label="💪 Soreness" hint="1 = fresh · 5 = very sore" />
+          <RatingButtons value={energy} onChange={setEnergy} label="⚡ Energy" hint="1 = exhausted · 5 = great" />
         </div>
         <button
           onClick={handleSubmit}

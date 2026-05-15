@@ -1,5 +1,6 @@
 'use client'
 import { scoreLabel } from '@/lib/wellness'
+import WellnessWidget from '@/components/WellnessWidget'
 
 interface LogEntry {
   date: string
@@ -9,7 +10,14 @@ interface LogEntry {
   score: number
 }
 
-export default function RecoveryClient({ logs }: { logs: LogEntry[] }) {
+interface WellnessLog {
+  sleepHours: number
+  soreness: number
+  energy: number
+  score: number
+}
+
+export default function RecoveryClient({ logs, todayLog, showWarning }: { logs: LogEntry[]; todayLog: WellnessLog | null; showWarning: boolean }) {
   // Build a 14-day window (oldest first) with gaps for days not logged
   const today = new Date()
   today.setUTCHours(0, 0, 0, 0)
@@ -40,6 +48,9 @@ export default function RecoveryClient({ logs }: { logs: LogEntry[] }) {
 
   return (
     <div className="space-y-4">
+      {/* Today's check-in */}
+      <WellnessWidget todayLog={todayLog} showWarning={showWarning} />
+
       {/* 14-day bar chart */}
       <div className="bg-gray-900/60 rounded-2xl p-4 border border-white/5">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Recovery Score — Last 14 Days</p>
@@ -93,7 +104,7 @@ export default function RecoveryClient({ logs }: { logs: LogEntry[] }) {
       </div>
 
       {logs.length === 0 && (
-        <p className="text-gray-500 text-sm text-center py-4">No check-ins yet. Log your first one from the dashboard.</p>
+        <p className="text-gray-500 text-sm text-center py-4">No check-ins yet. Use the form above to log your first one.</p>
       )}
     </div>
   )
