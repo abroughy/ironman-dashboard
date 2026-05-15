@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 import PhaseBanner from '@/components/PhaseBanner'
+import WellnessWidget from '@/components/WellnessWidget'
 import LoadRing from '@/components/LoadRing'
 import CoachingCard from '@/components/CoachingCard'
 import TrainingLoadCard from '@/components/TrainingLoadCard'
@@ -34,18 +35,42 @@ async function getRecentSessions(userId: string) {
   })
 }
 
+async function getWellnessData(userId: string) {
+  const today = new Date()
+  today.setUTCHours(0, 0, 0, 0)
+
+  const [todayLog, recentLogs] = await Promise.all([
+    prisma.wellnessLog.findUnique({
+      where: { userId_date: { userId, date: today } },
+    }),
+    prisma.wellnessLog.findMany({
+      where: { userId },
+      orderBy: { date: 'desc' },
+      take: 2,
+    }),
+  ])
+
+  const showWarning =
+    recentLogs.length === 2 &&
+    recentLogs[0].score < 45 &&
+    recentLogs[1].score < 45
+
+  return { todayLog, showWarning }
+}
+
 const disciplineColour = { swim: 'bg-blue-500/20 text-blue-300', bike: 'bg-orange-500/20 text-orange-300', run: 'bg-green-500/20 text-green-300' }
 
 export default async function DashboardPage() {
   const session = await getSession()
   if (!session) redirect('/login')
 
-  const [weekVol, recentSessions, stravaToken, latestSummary, nextRace] = await Promise.all([
+  const [weekVol, recentSessions, stravaToken, latestSummary, nextRace, wellnessData] = await Promise.all([
     getWeekVolume(session.userId),
     getRecentSessions(session.userId),
     prisma.stravaToken.findUnique({ where: { userId: session.userId } }),
     prisma.coachingSummary.findFirst({ where: { userId: session.userId }, orderBy: { generatedAt: 'desc' } }),
     getNextRace(session.userId),
+    getWellnessData(session.userId),
   ])
 
   const summaryContent = latestSummary
@@ -62,6 +87,16 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <PhaseBanner />
+
+      <WellnessWidget
+        todayLog={wellnessData.todayLog ? {
+          sleepHours: wellnessData.todayLog.sleepHours,
+          soreness: wellnessData.todayLog.soreness,
+          energy: wellnessData.todayLog.energy,
+          score: wellnessData.todayLog.score,
+        } : null}
+        showWarning={wellnessData.showWarning}
+      />
 
       {!stravaToken && (
         <div className="bg-gray-900 rounded-xl p-4 border border-dashed border-gray-700 text-center">
