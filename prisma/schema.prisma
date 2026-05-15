@@ -14,14 +14,17 @@ model User {
   raceType     String   @default("70.3")   // "70.3" | "140.6" | "olympic" | "sprint" | "marathon" | "half-marathon"
   raceDate     DateTime?
   isAdmin      Boolean  @default(false)
-  onboarded    Boolean  @default(false)
-  createdAt    DateTime @default(now())
+  onboarded      Boolean  @default(false)
+  shareWithGroup Boolean  @default(false)
+  avatarUrl      String?
+  createdAt      DateTime @default(now())
 
   sessions          Session[]
   stravaToken       StravaToken?
   coachingSummaries CoachingSummary[]
   races             Race[]
   wellnessLogs      WellnessLog[]
+  groupChallenges   GroupChallenge[]
 }
 
 model Race {
@@ -103,4 +106,20 @@ model WellnessLog {
 
   @@unique([userId, date])
   @@index([userId])
+}
+
+model GroupChallenge {
+  id          String   @id @default(cuid())
+  createdBy   String
+  name        String
+  discipline  String   // 'swim' | 'bike' | 'run' | 'any'
+  targetKm    Float
+  startDate   DateTime
+  endDate     DateTime
+  createdAt   DateTime @default(now())
+
+  creator User @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([createdBy])
+  @@index([endDate])
 }
