@@ -44,7 +44,7 @@ export default function RecoveryClient({ logs }: { logs: LogEntry[] }) {
       <div className="bg-gray-900/60 rounded-2xl p-4 border border-white/5">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Recovery Score — Last 14 Days</p>
         <div className="flex items-end gap-1 h-28">
-          {days.map(({ dateStr, label, log, isToday }) => {
+          {days.map(({ dateStr, log, isToday }) => {
             const height = log ? `${(log.score / maxScore) * 100}%` : '4px'
             const colour = log ? barColour(log.score) : 'bg-gray-700'
             const border = isToday && !log ? 'border border-dashed border-gray-600' : ''

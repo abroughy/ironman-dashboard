@@ -27,6 +27,15 @@ export async function generateWeeklySummary(userId: string): Promise<CoachingSum
     orderBy: { date: 'desc' },
   })
 
+  const sevenDaysAgo = new Date()
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+  sevenDaysAgo.setUTCHours(0, 0, 0, 0)
+
+  const wellnessLogs = await prisma.wellnessLog.findMany({
+    where: { userId, date: { gte: sevenDaysAgo } },
+    orderBy: { date: 'desc' },
+  })
+
   // Personal bests
   const bests: Record<string, { pace: number | null; distance: number }> = {
     swim: { pace: null, distance: 0 },
@@ -73,6 +82,14 @@ export async function generateWeeklySummary(userId: string): Promise<CoachingSum
     .map(s => `${s.date.toISOString().split('T')[0]} ${s.discipline} ${(s.distanceMetres / 1000).toFixed(1)}km ${Math.round(s.durationSecs / 60)}min effort=${s.perceivedEffort ?? '?'} notes="${s.notes ?? ''}"`)
     .join('\n')
 
+  const wellnessSummary = wellnessLogs.length > 0
+    ? wellnessLogs.map(w => {
+        const day = w.date.toLocaleDateString('en-GB', { weekday: 'short' })
+        const status = w.score >= 70 ? 'Good' : w.score >= 45 ? 'Fair' : 'Poor'
+        return `${day}: score ${w.score} (${status}) — sleep ${w.sleepHours}h, soreness ${w.soreness}/5, energy ${w.energy}/5`
+      }).join('\n')
+    : 'No wellness data logged this week.'
+
   const prompt = `You are a triathlon coach. Analyse the athlete's last 4 weeks of training and provide a structured weekly summary. Respond with valid JSON only — no markdown, no explanation.
 
 ATHLETE CONTEXT:
@@ -85,6 +102,9 @@ ${sessionSummary}
 
 AUTOMATED ALERTS:
 ${alertSummary}
+
+RECENT RECOVERY (last 7 days, newest first):
+${wellnessSummary}
 
 PERSONAL BESTS (last 4 weeks):
 - Swim: ${bests.swim.distance}m, pace ${bests.swim.pace ? (bests.swim.pace * 100).toFixed(0) + 's/100m' : 'n/a'}
