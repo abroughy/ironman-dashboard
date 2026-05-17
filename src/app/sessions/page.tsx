@@ -41,13 +41,13 @@ export default function SessionsPage() {
         <h1 className="text-xl font-bold">Sessions</h1>
         <button onClick={() => setModalOpen(true)}
           className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600">
-          + Add swim
+          + Add session
         </button>
       </div>
 
       {/* Discipline filter */}
       <div className="flex gap-2">
-        {['all', 'swim', 'bike', 'run'].map(d => (
+        {['all', 'swim', 'bike', 'run', 'weights', 'other'].map(d => (
           <button key={d} onClick={() => { setDiscipline(d); setPage(1) }}
             className={`px-3 py-1 rounded-full text-sm capitalize ${discipline === d ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400'}`}>
             {d}
@@ -92,7 +92,7 @@ export default function SessionsPage() {
         <div className="fixed inset-0 bg-black/70 flex items-end md:items-center justify-center z-50 p-4">
           <div className="bg-gray-900 rounded-2xl w-full max-w-lg p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-bold text-lg">Add swim session</h2>
+              <h2 className="font-bold text-lg">Add session</h2>
               <button onClick={() => setModalOpen(false)} className="text-gray-400 hover:text-white">✕</button>
             </div>
             <div className="flex gap-2 border-b border-gray-800 pb-2">

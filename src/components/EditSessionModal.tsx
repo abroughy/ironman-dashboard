@@ -90,9 +90,11 @@ export default function EditSessionModal({ session, onClose, onSaved }: Props) {
                 onChange={e => set('discipline', e.target.value)}
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"
               >
-                <option value="swim">Swim</option>
-                <option value="bike">Bike</option>
-                <option value="run">Run</option>
+                <option value="swim">🏊 Swim</option>
+                <option value="bike">🚴 Bike</option>
+                <option value="run">🏃 Run</option>
+                <option value="weights">🏋️ Weights</option>
+                <option value="other">⚡ Other</option>
               </select>
             </div>
             <div>
@@ -115,7 +117,6 @@ export default function EditSessionModal({ session, onClose, onSaved }: Props) {
                 min="0"
                 step="any"
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white"
-                required
               />
             </div>
             <div>

@@ -61,8 +61,8 @@ export async function POST(request: NextRequest) {
     source?: string
   }
 
-  if (!body.discipline || !body.date || !body.durationSecs || !body.distanceMetres) {
-    return NextResponse.json({ error: 'Missing required fields: discipline, date, durationSecs, distanceMetres' }, { status: 400 })
+  if (!body.discipline || !body.date || !body.durationSecs) {
+    return NextResponse.json({ error: 'Missing required fields: discipline, date, durationSecs' }, { status: 400 })
   }
 
   const date = new Date(body.date)
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       discipline: body.discipline,
       date,
       durationSecs: body.durationSecs,
-      distanceMetres: body.distanceMetres,
+      distanceMetres: body.distanceMetres ?? 0,
       avgHeartRate: body.avgHeartRate ?? null,
       perceivedEffort: body.perceivedEffort ?? null,
       notes: body.notes ?? null,

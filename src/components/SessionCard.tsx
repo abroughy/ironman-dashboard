@@ -1,7 +1,22 @@
 const sourceLabel: Record<string, string> = { strava: 'Strava', zwift: 'Zwift', manual: 'Manual', import: 'Import' }
+
 const disciplineColour: Record<string, string> = {
-  swim: 'text-blue-400', bike: 'text-orange-400', run: 'text-green-400',
+  swim: 'text-blue-400',
+  bike: 'text-orange-400',
+  run: 'text-green-400',
+  weights: 'text-purple-400',
+  other: 'text-gray-300',
 }
+
+const disciplineEmoji: Record<string, string> = {
+  swim: '🏊',
+  bike: '🚴',
+  run: '🏃',
+  weights: '🏋️',
+  other: '⚡',
+}
+
+const DISTANCE_DISCIPLINES = new Set(['swim', 'bike', 'run'])
 
 interface Session {
   id: string; discipline: string; date: string; durationSecs: number
@@ -9,7 +24,8 @@ interface Session {
   notes?: string | null; source: string
 }
 
-function paceLabel(s: Session): string {
+function paceLabel(s: Session): string | null {
+  if (!DISTANCE_DISCIPLINES.has(s.discipline) || !s.distanceMetres) return null
   if (s.discipline === 'swim') {
     const secsPerHundred = (s.durationSecs / s.distanceMetres) * 100
     const m = Math.floor(secsPerHundred / 60)
@@ -27,6 +43,11 @@ function paceLabel(s: Session): string {
 }
 
 export default function SessionCard({ session, onClick }: { session: Session; onClick?: () => void }) {
+  const emoji = disciplineEmoji[session.discipline] ?? '🏅'
+  const colour = disciplineColour[session.discipline] ?? 'text-white'
+  const pace = paceLabel(session)
+  const hasDistance = session.distanceMetres > 0
+
   return (
     <button
       onClick={onClick}
@@ -34,12 +55,15 @@ export default function SessionCard({ session, onClick }: { session: Session; on
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className={`font-medium text-sm capitalize ${disciplineColour[session.discipline] ?? 'text-white'}`}>
-            {session.discipline}
+          <span className={`font-medium text-sm capitalize flex items-center gap-1 ${colour}`}>
+            <span>{emoji}</span>
+            <span>{session.discipline === 'other' ? 'Other' : session.discipline.charAt(0).toUpperCase() + session.discipline.slice(1)}</span>
           </span>
-          <span className="text-white font-mono text-sm">{(session.distanceMetres / 1000).toFixed(2)}km</span>
+          {hasDistance && (
+            <span className="text-white font-mono text-sm">{(session.distanceMetres / 1000).toFixed(2)}km</span>
+          )}
           <span className="text-gray-400 text-sm">{Math.floor(session.durationSecs / 60)}min</span>
-          <span className="text-gray-500 text-xs hidden sm:block">{paceLabel(session)}</span>
+          {pace && <span className="text-gray-500 text-xs hidden sm:block">{pace}</span>}
         </div>
         <div className="flex items-center gap-2">
           {session.avgHeartRate && <span className="text-xs text-gray-500">♥ {session.avgHeartRate}</span>}
