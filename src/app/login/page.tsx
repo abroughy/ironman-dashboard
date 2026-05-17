@@ -1,13 +1,11 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -25,9 +23,9 @@ export default function LoginPage() {
         return
       }
       if (!data.onboarded) {
-        router.push('/onboarding')
+        window.location.href = '/onboarding'
       } else {
-        router.push('/')
+        window.location.href = '/'
       }
     } catch {
       setError('Something went wrong')
