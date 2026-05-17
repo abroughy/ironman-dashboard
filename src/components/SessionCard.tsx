@@ -42,11 +42,39 @@ function paceLabel(s: Session): string | null {
   return `${m}:${sec.toString().padStart(2, '0')}/km`
 }
 
+interface ExerciseLog {
+  unit: 'kg' | 'lbs'
+  exercises: { name: string; sets: number | null; reps: number | null; weight: number | null }[]
+}
+
+function parseExerciseNotes(notes: string): ExerciseLog | null {
+  try {
+    const parsed = JSON.parse(notes)
+    if (parsed && Array.isArray(parsed.exercises)) return parsed as ExerciseLog
+  } catch {
+    // not JSON
+  }
+  return null
+}
+
+function exerciseLabel(ex: ExerciseLog['exercises'][number], unit: string): string {
+  const parts: string[] = [ex.name]
+  if (ex.sets != null && ex.reps != null) parts.push(`${ex.sets}×${ex.reps}`)
+  else if (ex.sets != null) parts.push(`${ex.sets} sets`)
+  else if (ex.reps != null) parts.push(`${ex.reps} reps`)
+  if (ex.weight != null) parts.push(`${ex.weight}${unit}`)
+  return parts.join(' · ')
+}
+
 export default function SessionCard({ session, onClick }: { session: Session; onClick?: () => void }) {
   const emoji = disciplineEmoji[session.discipline] ?? '🏅'
   const colour = disciplineColour[session.discipline] ?? 'text-white'
   const pace = paceLabel(session)
   const hasDistance = session.distanceMetres > 0
+
+  const exerciseLog = session.discipline === 'weights' && session.notes
+    ? parseExerciseNotes(session.notes)
+    : null
 
   return (
     <button
@@ -73,7 +101,17 @@ export default function SessionCard({ session, onClick }: { session: Session; on
           <span className="text-xs text-gray-600">{new Date(session.date).toLocaleDateString()}</span>
         </div>
       </div>
-      {session.notes && <p className="text-xs text-gray-500 mt-1 truncate">{session.notes}</p>}
+      {exerciseLog ? (
+        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
+          {exerciseLog.exercises.map((ex, i) => (
+            <span key={i} className="text-xs text-gray-500">
+              {exerciseLabel(ex, exerciseLog.unit)}
+            </span>
+          ))}
+        </div>
+      ) : session.notes ? (
+        <p className="text-xs text-gray-500 mt-1 truncate">{session.notes}</p>
+      ) : null}
     </button>
   )
 }
