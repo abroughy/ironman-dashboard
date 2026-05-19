@@ -127,6 +127,12 @@ export function getCurrentMealSlot(slots: string[], hour?: number): string {
 
 // ─── Claude-only generation ───────────────────────────────────────────────────
 
+/** Exported for testing. Builds the favourites clause appended to the meal plan prompt. */
+export function buildFavouriteNote(favourites: string[]): string {
+  if (favourites.length === 0) return ''
+  return `\nFavourites to include or draw inspiration from: ${favourites.slice(0, 10).join(', ')}.`
+}
+
 /**
  * Generates a full weekly meal plan using Claude only — no external recipe API.
  * Claude produces recipe names, realistic macro estimates, and a Google recipe link.
@@ -134,6 +140,7 @@ export function getCurrentMealSlot(slots: string[], hour?: number): string {
 export async function generateMealPlan(
   profile: NutritionProfileData,
   phase: string,
+  favourites: string[] = [],
 ): Promise<MealPlanContent> {
   const slots = MEAL_SLOTS[profile.mealsPerDay] ?? MEAL_SLOTS[5]
   const weekStart = getWeekStart()
@@ -154,8 +161,10 @@ export async function generateMealPlan(
   const intoleranceNote = profile.intolerances ? ` Avoid: ${profile.intolerances}.` : ''
   const totalMeals = weekDates.length * slots.length
 
+  const favouriteNote = buildFavouriteNote(favourites)
+
   // Single compact call — CSV output is tiny so response is fast (under 5s on Sonnet)
-  const prompt = `Triathlete meal plan. Phase: ${phase} — ${guidance}. ${profile.calorieGoal} kcal/day.${dietNote}${intoleranceNote}
+  const prompt = `Triathlete meal plan. Phase: ${phase} — ${guidance}. ${profile.calorieGoal} kcal/day.${dietNote}${intoleranceNote}${favouriteNote}
 Slots per day: ${slots.join(', ')}. Calories: breakfast 25%, snacks 8-10%, lunch 30%, dinner 30%.
 Vary meals daily. Specific recipe names (not generic).
 

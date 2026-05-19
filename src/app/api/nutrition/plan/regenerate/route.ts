@@ -26,6 +26,14 @@ export async function POST(request: NextRequest) {
       ? currentPhaseFromWeeks(weeksToRaceFromDate(nextRace.date))
       : 'Base'
 
+    const favRecords = await prisma.favouriteMeal.findMany({
+      where: { userId: session.userId },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      select: { title: true },
+    })
+    const favouriteTitles = favRecords.map(f => f.title)
+
     const content = await generateMealPlan(
       {
         calorieGoal: profile.calorieGoal,
@@ -35,6 +43,7 @@ export async function POST(request: NextRequest) {
         mealsPerDay: profile.mealsPerDay,
       },
       phase,
+      favouriteTitles,
     )
 
     const plan = await prisma.mealPlan.upsert({

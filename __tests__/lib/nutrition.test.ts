@@ -7,6 +7,7 @@ import {
   getCurrentMealSlot,
   MEAL_SLOTS,
   SLOT_EMOJIS,
+  buildFavouriteNote,
 } from '@/lib/nutrition'
 
 describe('estimateCalories', () => {
@@ -108,5 +109,24 @@ describe('MEAL_SLOTS', () => {
       expect(slots).toContain('lunch')
       expect(slots).toContain('dinner')
     }
+  })
+})
+
+describe('buildFavouriteNote', () => {
+  it('returns empty string for empty favourites', () => {
+    expect(buildFavouriteNote([])).toBe('')
+  })
+
+  it('includes favourite titles in the note', () => {
+    const note = buildFavouriteNote(['Chicken Tikka Masala', 'Salmon Pasta'])
+    expect(note).toContain('Chicken Tikka Masala')
+    expect(note).toContain('Salmon Pasta')
+  })
+
+  it('limits to 10 favourites even when given more', () => {
+    const many = Array.from({ length: 15 }, (_, i) => `Meal ${i}`)
+    const note = buildFavouriteNote(many)
+    expect(note).toContain('Meal 9')
+    expect(note).not.toContain('Meal 10')
   })
 })
