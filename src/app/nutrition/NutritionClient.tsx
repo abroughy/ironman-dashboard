@@ -42,11 +42,14 @@ export default function NutritionClient() {
     setError('')
     try {
       const res = await fetch('/api/nutrition/plan/regenerate', { method: 'POST' })
-      if (!res.ok) throw new Error('Failed to regenerate')
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.detail ?? body.error ?? `HTTP ${res.status}`)
+      }
       const data = await res.json() as PlanResponse
       setPlan(data)
-    } catch {
-      setError('Failed to regenerate plan. Please try again.')
+    } catch (e) {
+      setError(`Failed to regenerate: ${e instanceof Error ? e.message : 'unknown error'}`)
     } finally {
       setLoading(false)
     }
