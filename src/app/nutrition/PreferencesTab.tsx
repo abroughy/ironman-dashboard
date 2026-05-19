@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { FavouriteMeal } from '@/types/nutrition'
+import { FavouriteMeal, SLOT_EMOJIS } from '@/types/nutrition'
 
 interface Profile {
   id: string
@@ -13,8 +13,8 @@ interface Profile {
 
 interface Props {
   phase: string
-  favourites?: FavouriteMeal[]
-  onRemoveFavourite?: (id: string) => void
+  favourites: FavouriteMeal[]
+  onRemoveFavourite: (id: string) => void
 }
 
 // BMR formula: Mifflin-St Jeor, assumes 175cm height, age 30, male
@@ -56,7 +56,7 @@ async function patchProfile(data: Partial<Omit<Profile, 'id'>>) {
   if (!res.ok) throw new Error('Failed to save')
 }
 
-export default function PreferencesTab({ phase }: Props) {
+export default function PreferencesTab({ phase, favourites, onRemoveFavourite }: Props) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [calorieInput, setCalorieInput] = useState('')
   const [weightInput, setWeightInput] = useState('')
@@ -217,6 +217,44 @@ export default function PreferencesTab({ phase }: Props) {
 
   return (
     <div className="space-y-3">
+      {/* Favourites */}
+      <div className={cardClass}>
+        <p className={labelClass}>Saved Favourites</p>
+        {favourites.length === 0 ? (
+          <p className="text-xs text-gray-500">
+            Meals you ♥ will appear here and influence your next plan.
+          </p>
+        ) : (
+          <>
+            <div className="space-y-2">
+              {favourites.map(fav => (
+                <div key={fav.id} className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm flex-shrink-0">
+                      {SLOT_EMOJIS[fav.slot] ?? '🍽️'}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm text-white truncate">{fav.title}</p>
+                      <p className="text-[10px] text-gray-500">{fav.calories} kcal</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onRemoveFavourite(fav.id)}
+                    className="text-gray-600 hover:text-red-400 text-sm flex-shrink-0 transition-colors"
+                    title="Remove from favourites"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-gray-600 mt-3">
+              These meals will influence your next generated plan.
+            </p>
+          </>
+        )}
+      </div>
+
       {/* Calorie goal */}
       <div className={cardClass}>
         <p className={labelClass}>Calorie Goal</p>
