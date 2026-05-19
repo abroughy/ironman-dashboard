@@ -78,6 +78,7 @@ export default function NutritionClient() {
           loading={loading}
           error={error}
           onRegenerate={regeneratePlan}
+          onRetry={fetchPlan}
         />
       )}
 

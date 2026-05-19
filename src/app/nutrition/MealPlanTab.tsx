@@ -13,6 +13,7 @@ interface Props {
   loading: boolean
   error: string
   onRegenerate: () => void
+  onRetry: () => void
 }
 
 const PHASE_LABELS: Record<string, string> = {
@@ -66,7 +67,7 @@ function RecipeCard({ meal }: { meal: Meal }) {
   )
 }
 
-export default function MealPlanTab({ plan, loading, error, onRegenerate }: Props) {
+export default function MealPlanTab({ plan, loading, error, onRegenerate, onRetry }: Props) {
   const days = plan?.content.days ?? []
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
 
@@ -89,7 +90,7 @@ export default function MealPlanTab({ plan, loading, error, onRegenerate }: Prop
       <div className="text-center py-8">
         <p className="text-red-400 text-sm mb-4">{error}</p>
         <button
-          onClick={onRegenerate}
+          onClick={onRetry}
           className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600"
         >
           Try Again
