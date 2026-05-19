@@ -169,7 +169,7 @@ Return JSON array of ${slots.length} meals only — no markdown:
 [{"slot":"breakfast","recipeId":${dayIndex * slots.length + 1},"title":"Specific recipe name","image":"","sourceUrl":"https://www.google.com/search?q=recipe+name+recipe","calories":620,"proteinG":18,"carbsG":95,"fatG":14}]`
 
       const message = await client.messages.create({
-        model: 'claude-3-5-haiku-20241022',
+        model: 'claude-sonnet-4-5',
         max_tokens: 1200,
         messages: [{ role: 'user', content: prompt }],
       })
