@@ -144,55 +144,66 @@ export async function generateMealPlan(
   })
 
   const phaseGuidance: Record<string, string> = {
-    Peak: 'High carb: 60% carbs, 25% protein, 15% fat. Pasta, rice, potatoes, oats.',
-    'Race Week': 'Carb-loading: 65% carbs, 20% protein, 15% fat. Easy-to-digest only.',
-    Build: 'Balanced: 50% carbs, 30% protein, 20% fat.',
-    Taper: `Reduced calories (${Math.round(profile.calorieGoal * 0.85)} kcal/day). 50% carbs, 30% protein, 20% fat.`,
+    Peak: 'high carb (60% carbs, 25% protein, 15% fat)',
+    'Race Week': 'carb-loading (65% carbs, 20% protein, 15% fat)',
+    Build: 'balanced (50% carbs, 30% protein, 20% fat)',
+    Taper: `reduced calories ~${Math.round(profile.calorieGoal * 0.85)} kcal (50% carbs, 30% protein, 20% fat)`,
   }
-  const guidance = phaseGuidance[phase] ?? 'Balanced: 50% carbs, 30% protein, 20% fat.'
-  const dietNote = profile.diet !== 'none' ? `Diet: ${profile.diet}.` : ''
-  const intoleranceNote = profile.intolerances ? `Avoid: ${profile.intolerances}.` : ''
+  const guidance = phaseGuidance[phase] ?? 'balanced (50% carbs, 30% protein, 20% fat)'
+  const dietNote = profile.diet !== 'none' ? ` Diet: ${profile.diet}.` : ''
+  const intoleranceNote = profile.intolerances ? ` Avoid: ${profile.intolerances}.` : ''
+  const totalMeals = weekDates.length * slots.length
+
+  // Single compact call — CSV output is tiny so response is fast (under 5s on Sonnet)
+  const prompt = `Triathlete meal plan. Phase: ${phase} — ${guidance}. ${profile.calorieGoal} kcal/day.${dietNote}${intoleranceNote}
+Slots per day: ${slots.join(', ')}. Calories: breakfast 25%, snacks 8-10%, lunch 30%, dinner 30%.
+Vary meals daily. Specific recipe names (not generic).
+
+Output ONLY ${totalMeals} CSV rows, no header, no markdown:
+date,slot,id,title,cal,pro,carb,fat
+
+Dates: ${weekDates.join(', ')}`
 
   const client = new Anthropic({ apiKey: config.anthropicApiKey })
+  const message = await client.messages.create({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 3000,
+    messages: [{ role: 'user', content: prompt }],
+  })
 
-  // Generate one day at a time in parallel — keeps each call small and fast (<3s each)
-  // This avoids Vercel's 10s function timeout vs generating all 7 days in one big call
-  const days: DayPlan[] = await Promise.all(
-    weekDates.map(async (date, dayIndex) => {
-      const prompt = `Sports nutritionist meal plan for an endurance triathlete.
-Phase: ${phase}. ${guidance}
-Calories: ${profile.calorieGoal} kcal. ${dietNote} ${intoleranceNote}
-Date: ${date}. Slots: ${JSON.stringify(slots)}.
-Calories split: breakfast 25%, snacks 8-10% each, lunch 30%, dinner 30%.
+  const text = message.content[0].type === 'text' ? message.content[0].text.trim() : ''
 
-Return JSON array of ${slots.length} meals only — no markdown:
-[{"slot":"breakfast","recipeId":${dayIndex * slots.length + 1},"title":"Specific recipe name","image":"","sourceUrl":"https://www.google.com/search?q=recipe+name+recipe","calories":620,"proteinG":18,"carbsG":95,"fatG":14}]`
-
-      const message = await client.messages.create({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 1200,
-        messages: [{ role: 'user', content: prompt }],
-      })
-
-      const text = message.content[0].type === 'text' ? message.content[0].text : '[]'
-      const cleaned = text.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim()
-
-      let meals: Meal[] = []
-      try {
-        const parsed = JSON.parse(cleaned)
-        if (Array.isArray(parsed)) meals = parsed as Meal[]
-      } catch {
-        // If parsing fails for one day, return empty meals for that day
-        console.error(`Failed to parse meals for ${date}:`, cleaned.slice(0, 200))
-      }
-
-      return {
-        date,
-        totalCalories: meals.reduce((sum, m) => sum + m.calories, 0),
-        meals,
-      }
+  // Parse CSV rows into meals grouped by date
+  const dayMap = new Map<string, Meal[]>()
+  let id = 1
+  for (const line of text.split('\n')) {
+    const cols = line.trim().split(',')
+    if (cols.length < 8) continue
+    const [date, slot, , title, cal, pro, carb, fat] = cols
+    if (!weekDates.includes(date.trim())) continue
+    const d = date.trim()
+    if (!dayMap.has(d)) dayMap.set(d, [])
+    dayMap.get(d)!.push({
+      slot: slot.trim(),
+      recipeId: id++,
+      title: title.trim(),
+      image: '',
+      sourceUrl: `https://www.google.com/search?q=${encodeURIComponent(title.trim())}+recipe`,
+      calories: Math.round(Number(cal) || 0),
+      proteinG: Math.round(Number(pro) || 0),
+      carbsG: Math.round(Number(carb) || 0),
+      fatG: Math.round(Number(fat) || 0),
     })
-  )
+  }
+
+  const days: DayPlan[] = weekDates.map(date => {
+    const meals = dayMap.get(date) ?? []
+    return {
+      date,
+      totalCalories: meals.reduce((sum, m) => sum + m.calories, 0),
+      meals,
+    }
+  })
 
   return { phase, calorieGoal: profile.calorieGoal, days }
 }
