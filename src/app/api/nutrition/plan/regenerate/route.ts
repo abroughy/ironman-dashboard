@@ -48,7 +48,8 @@ export async function POST(request: NextRequest) {
       content: JSON.parse(plan.content),
     })
   } catch (err) {
-    console.error('Failed to regenerate meal plan:', err)
-    return NextResponse.json({ error: 'Failed to regenerate meal plan' }, { status: 500 })
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('Failed to regenerate meal plan:', message)
+    return NextResponse.json({ error: 'Failed to regenerate meal plan', detail: message }, { status: 500 })
   }
 }
