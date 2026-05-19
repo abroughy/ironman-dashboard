@@ -9,7 +9,8 @@ export default async function NutritionPage() {
   const session = await getSession()
   if (!session) redirect('/login')
 
-  const profile = await prisma.nutritionProfile.upsert({
+  // Ensure profile exists with defaults on first visit
+  await prisma.nutritionProfile.upsert({
     where: { userId: session.userId },
     update: {},
     create: {
@@ -24,16 +25,7 @@ export default async function NutritionPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold">Nutrition</h1>
-      <NutritionClient
-        initialProfile={{
-          id: profile.id,
-          calorieGoal: profile.calorieGoal,
-          weightKg: profile.weightKg,
-          diet: profile.diet,
-          intolerances: profile.intolerances,
-          mealsPerDay: profile.mealsPerDay,
-        }}
-      />
+      <NutritionClient />
     </div>
   )
 }

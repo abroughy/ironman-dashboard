@@ -4,15 +4,6 @@ import MealPlanTab from './MealPlanTab'
 import PreferencesTab from './PreferencesTab'
 import { MealPlanContent } from '@/types/nutrition'
 
-interface Profile {
-  id: string
-  calorieGoal: number
-  weightKg: number | null
-  diet: string
-  intolerances: string
-  mealsPerDay: number
-}
-
 interface PlanResponse {
   weekStart: string
   generatedAt: string
@@ -21,9 +12,8 @@ interface PlanResponse {
 
 type Tab = 'plan' | 'preferences'
 
-export default function NutritionClient({ initialProfile }: { initialProfile: Profile }) {
+export default function NutritionClient() {
   const [tab, setTab] = useState<Tab>('plan')
-  const [, setProfile] = useState<Profile>(initialProfile)
   const [plan, setPlan] = useState<PlanResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
