@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { FavouriteMeal } from '@/types/nutrition'
 
 interface Profile {
   id: string
@@ -12,6 +13,8 @@ interface Profile {
 
 interface Props {
   phase: string
+  favourites?: FavouriteMeal[]
+  onRemoveFavourite?: (id: string) => void
 }
 
 // BMR formula: Mifflin-St Jeor, assumes 175cm height, age 30, male
