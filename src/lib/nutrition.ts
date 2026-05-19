@@ -50,7 +50,7 @@ export const SLOT_EMOJIS: Record<string, string> = {
   lunch: '☀️',
   afternoonSnack: '🍌',
   dinner: '🌙',
-  eveningSnack: '🌙',
+  eveningSnack: '🥛',
 }
 
 export const SLOT_LABELS: Record<string, string> = {
@@ -64,24 +64,21 @@ export const SLOT_LABELS: Record<string, string> = {
 
 // ─── Pure helpers ─────────────────────────────────────────────────────────────
 
-/** Population-typical placeholders used in Mifflin-St Jeor formula */
+// BMR formula: Mifflin-St Jeor, assumes 175cm height, age 30, male
 const BMR_HEIGHT_CM = 175
 const BMR_AGE_YEARS = 30
 
-/** Mifflin-St Jeor BMR × phase activity multiplier */
 export function estimateCalories(weightKg: number, phase: string): number {
-  const bmr = (10 * weightKg) + (6.25 * BMR_HEIGHT_CM) - (5 * BMR_AGE_YEARS) + 5
+  const bmr = 10 * weightKg + 6.25 * BMR_HEIGHT_CM - 5 * BMR_AGE_YEARS + 5
   const multipliers: Record<string, number> = {
-    'Peak': 1.75,
-    'Race Week': 1.75,
-    'Build': 1.60,
-    'Taper': 1.45,
+    Peak: 1.75,
+    Build: 1.60,
+    Taper: 1.45,
+    Base: 1.55,
   }
-  const multiplier = multipliers[phase] ?? 1.55
-  return Math.round(bmr * multiplier)
+  return Math.round(bmr * (multipliers[phase] ?? 1.55))
 }
 
-/** Map DB diet value → Spoonacular diet param (undefined = omit) */
 export function toDiet(diet: string): string | undefined {
   const map: Record<string, string> = {
     vegetarian: 'vegetarian',
@@ -92,9 +89,7 @@ export function toDiet(diet: string): string | undefined {
   return map[diet]
 }
 
-/** Map comma-separated UI intolerance keys → Spoonacular comma-separated values */
 export function toSpoonacularIntolerances(intolerances: string): string {
-  if (!intolerances) return ''
   const map: Record<string, string> = {
     nuts: 'tree nut',
     shellfish: 'shellfish',
@@ -130,173 +125,12 @@ export function getCurrentMealSlot(slots: string[], hour?: number): string {
   return slots[slots.length - 1]
 }
 
-// ─── Spoonacular ──────────────────────────────────────────────────────────────
+// ─── Claude-only generation ───────────────────────────────────────────────────
 
-interface SpoonacularNutrient {
-  name: string
-  amount: number
-  unit: string
-}
-
-interface SpoonacularResult {
-  id: number
-  title: string
-  image: string
-  sourceUrl?: string
-  nutrition?: { nutrients: SpoonacularNutrient[] }
-}
-
-interface SpoonacularSearchResponse {
-  results: SpoonacularResult[]
-}
-
-function extractNutrient(nutrients: SpoonacularNutrient[], name: string): number {
-  return Math.round(nutrients.find(n => n.name === name)?.amount ?? 0)
-}
-
-function mapResult(result: SpoonacularResult, slot: string): Meal {
-  const nutrients = result.nutrition?.nutrients ?? []
-  return {
-    slot,
-    recipeId: result.id,
-    title: result.title,
-    image: result.image,
-    sourceUrl: result.sourceUrl ?? `https://spoonacular.com/recipes/${result.title.toLowerCase().replace(/\s+/g, '-')}-${result.id}`,
-    calories: extractNutrient(nutrients, 'Calories'),
-    proteinG: extractNutrient(nutrients, 'Protein'),
-    carbsG: extractNutrient(nutrients, 'Carbohydrates'),
-    fatG: extractNutrient(nutrients, 'Fat'),
-  }
-}
-
-async function spoonacularSearch(
-  query: string,
-  diet: string | undefined,
-  intolerances: string,
-  minCalories?: number,
-  maxCalories?: number,
-): Promise<SpoonacularResult | null> {
-  const params = new URLSearchParams({
-    query,
-    addRecipeNutrition: 'true',
-    addRecipeInformation: 'true',
-    number: '1',
-    apiKey: config.spoonacularApiKey,
-  })
-  if (diet) params.set('diet', diet)
-  if (intolerances) params.set('intolerances', intolerances)
-  if (minCalories != null) params.set('minCalories', String(minCalories))
-  if (maxCalories != null) params.set('maxCalories', String(maxCalories))
-
-  const res = await fetch(`https://api.spoonacular.com/recipes/complexSearch?${params}`)
-  if (!res.ok) throw new Error(`Spoonacular ${res.status}: ${await res.text()}`)
-  const data = await res.json() as SpoonacularSearchResponse
-  return data.results[0] ?? null
-}
-
-async function fetchRecipeForSlot(
-  slot: string,
-  searchQuery: string,
-  targetCalories: number,
-  diet: string | undefined,
-  intolerances: string,
-): Promise<Meal | null> {
-  const min = Math.round(targetCalories * 0.85)
-  const max = Math.round(targetCalories * 1.15)
-
-  // Try with calorie bounds first
-  let result = await spoonacularSearch(searchQuery, diet, intolerances, min, max)
-
-  // Retry without calorie bounds if no result
-  if (!result) {
-    result = await spoonacularSearch(searchQuery, diet, intolerances)
-  }
-
-  // Final fallback: generic healthy meal for this slot
-  if (!result) {
-    result = await spoonacularSearch(`healthy ${SLOT_LABELS[slot] ?? slot} meal`, diet, intolerances)
-  }
-
-  return result ? mapResult(result, slot) : null
-}
-
-// ─── Claude prompt ────────────────────────────────────────────────────────────
-
-interface ClaudeMealSlot {
-  date: string
-  slot: string
-  targetCalories: number
-  searchQuery: string
-}
-
-async function buildMealStructureWithClaude(
-  phase: string,
-  calorieGoal: number,
-  slots: string[],
-  weekDates: string[],
-  diet: string,
-  intolerances: string,
-): Promise<ClaudeMealSlot[]> {
-  const phaseGuidance: Record<string, string> = {
-    Peak: 'High carb focus: 60% carbs, 25% protein, 15% fat. Prioritise pasta, rice, potatoes, oats.',
-    'Race Week': 'Carb-loading: 65% carbs, 20% protein, 15% fat. Easy-to-digest foods only.',
-    Build: 'Balanced macros: 50% carbs, 30% protein, 20% fat. Good mix of whole foods.',
-    Taper: `Reduced total calories (${Math.round(calorieGoal * 0.85)} kcal/day target). Maintain protein. 50% carbs, 30% protein, 20% fat.`,
-  }
-  const guidance = phaseGuidance[phase] ?? 'Balanced macros: 50% carbs, 30% protein, 20% fat.'
-
-  const slotsJson = JSON.stringify(slots)
-  const datesJson = JSON.stringify(weekDates)
-  const dietNote = diet !== 'none' ? `Diet: ${diet}.` : ''
-  const intoleranceNote = intolerances ? `Avoid: ${intolerances}.` : ''
-
-  const prompt = `You are a sports nutritionist creating a weekly meal plan for an endurance triathlete.
-
-Training phase: ${phase}
-Nutrition guidance: ${guidance}
-Daily calorie goal: ${calorieGoal} kcal
-Meal slots per day: ${slotsJson}
-Week dates: ${datesJson}
-${dietNote} ${intoleranceNote}
-
-For each day and meal slot, provide a Spoonacular recipe search query and a calorie target.
-Vary the meals — do not repeat the same dish on consecutive days.
-Distribute calories roughly: breakfast 25%, each snack 8–10%, lunch 30%, dinner 30%.
-
-Respond with valid JSON only — no markdown, no explanation. Return an array of objects:
-[
-  {
-    "date": "2026-05-19",
-    "slot": "breakfast",
-    "targetCalories": 650,
-    "searchQuery": "high carb oatmeal banana honey"
-  }
-]
-
-Return exactly ${weekDates.length * slots.length} objects (${weekDates.length} days × ${slots.length} slots).`
-
-  const client = new Anthropic({ apiKey: config.anthropicApiKey })
-  const message = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 6000,
-    messages: [{ role: 'user', content: prompt }],
-  })
-
-  const text = message.content[0].type === 'text' ? message.content[0].text : ''
-  let parsed: ClaudeMealSlot[]
-  try {
-    parsed = JSON.parse(text) as ClaudeMealSlot[]
-  } catch {
-    throw new Error(`Claude returned invalid JSON: ${text.slice(0, 300)}`)
-  }
-  if (!Array.isArray(parsed)) {
-    throw new Error(`Claude returned unexpected structure (expected array): ${text.slice(0, 300)}`)
-  }
-  return parsed
-}
-
-// ─── Main plan generator ──────────────────────────────────────────────────────
-
+/**
+ * Generates a full weekly meal plan using Claude only — no external recipe API.
+ * Claude produces recipe names, realistic macro estimates, and a Google recipe link.
+ */
 export async function generateMealPlan(
   profile: NutritionProfileData,
   phase: string,
@@ -309,44 +143,97 @@ export async function generateMealPlan(
     return d.toISOString().split('T')[0]
   })
 
-  const diet = toDiet(profile.diet)
-  const spoonacularIntolerances = toSpoonacularIntolerances(profile.intolerances)
+  const phaseGuidance: Record<string, string> = {
+    Peak: 'High carb focus: 60% carbs, 25% protein, 15% fat. Prioritise pasta, rice, potatoes, oats.',
+    'Race Week': 'Carb-loading: 65% carbs, 20% protein, 15% fat. Easy-to-digest foods only.',
+    Build: 'Balanced macros: 50% carbs, 30% protein, 20% fat. Good mix of whole foods.',
+    Taper: `Reduced total calories (${Math.round(profile.calorieGoal * 0.85)} kcal/day). Maintain protein. 50% carbs, 30% protein, 20% fat.`,
+  }
+  const guidance = phaseGuidance[phase] ?? 'Balanced macros: 50% carbs, 30% protein, 20% fat.'
 
-  // Step 1: Claude generates meal structure
-  const structure = await buildMealStructureWithClaude(
-    phase,
-    profile.calorieGoal,
-    slots,
-    weekDates,
-    profile.diet,
-    profile.intolerances,
-  )
+  const dietNote = profile.diet !== 'none' ? `Diet preference: ${profile.diet}.` : ''
+  const intoleranceNote = profile.intolerances ? `Avoid these allergens: ${profile.intolerances}.` : ''
 
-  // Step 2: Resolve all meal slots via Spoonacular (parallel per day)
-  const dayMap = new Map<string, ClaudeMealSlot[]>()
-  for (const item of structure) {
-    if (!dayMap.has(item.date)) dayMap.set(item.date, [])
-    dayMap.get(item.date)!.push(item)
+  const totalMeals = weekDates.length * slots.length
+
+  const prompt = `You are a sports nutritionist creating a weekly meal plan for an endurance triathlete.
+
+Training phase: ${phase}
+Nutrition guidance: ${guidance}
+Daily calorie goal: ${profile.calorieGoal} kcal
+Meal slots per day: ${JSON.stringify(slots)}
+Week dates (Mon–Sun): ${JSON.stringify(weekDates)}
+${dietNote}
+${intoleranceNote}
+
+For each meal, provide:
+- A specific, realistic recipe name (not generic — e.g. "Grilled salmon with sweet potato mash" not just "Salmon")
+- Realistic macro estimates based on the recipe
+- A recipeId (just use a unique integer 1–${totalMeals})
+- image: empty string ""
+- sourceUrl: a Google search URL like "https://www.google.com/search?q=recipe+name+recipe" (URL-encode the recipe name)
+
+Distribute daily calories: breakfast ~25%, each snack ~8–10%, lunch ~30%, dinner ~30%.
+Vary meals — do not repeat the same dish on consecutive days.
+
+Respond with valid JSON only — no markdown, no explanation. Return an array of exactly ${totalMeals} objects:
+[
+  {
+    "date": "2026-05-19",
+    "slot": "breakfast",
+    "recipeId": 1,
+    "title": "Banana oat pancakes with honey",
+    "image": "",
+    "sourceUrl": "https://www.google.com/search?q=banana+oat+pancakes+recipe",
+    "calories": 620,
+    "proteinG": 18,
+    "carbsG": 95,
+    "fatG": 14
+  }
+]
+
+Return exactly ${weekDates.length} × ${slots.length} = ${totalMeals} objects.`
+
+  const client = new Anthropic({ apiKey: config.anthropicApiKey })
+  const message = await client.messages.create({
+    model: 'claude-haiku-4-5',
+    max_tokens: 8000,
+    messages: [{ role: 'user', content: prompt }],
+  })
+
+  const text = message.content[0].type === 'text' ? message.content[0].text : ''
+
+  // Strip any markdown code fences Claude might wrap around the JSON
+  const cleaned = text.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim()
+
+  interface ClaudeMeal extends Meal { date: string }
+
+  let parsed: ClaudeMeal[]
+  try {
+    parsed = JSON.parse(cleaned) as ClaudeMeal[]
+  } catch {
+    throw new Error(`Claude returned invalid JSON: ${cleaned.slice(0, 300)}`)
+  }
+  if (!Array.isArray(parsed)) {
+    throw new Error(`Claude returned unexpected structure (expected array): ${cleaned.slice(0, 300)}`)
   }
 
-  const days: DayPlan[] = await Promise.all(
-    weekDates.map(async (date) => {
-      const daySlots = dayMap.get(date) ?? []
-      const meals = (
-        await Promise.all(
-          daySlots.map(s =>
-            fetchRecipeForSlot(s.slot, s.searchQuery, s.targetCalories, diet, spoonacularIntolerances)
-          )
-        )
-      ).filter((m): m is Meal => m !== null)
+  // Group meals by date
+  const dayMap = new Map<string, Meal[]>()
+  for (const meal of parsed) {
+    const { date, ...mealData } = meal
+    if (!dayMap.has(date)) dayMap.set(date, [])
+    dayMap.get(date)!.push(mealData)
+  }
 
-      return {
-        date,
-        totalCalories: meals.reduce((sum, m) => sum + m.calories, 0),
-        meals,
-      }
-    })
-  )
+  const days: DayPlan[] = weekDates.map(date => {
+    const meals = dayMap.get(date) ?? []
+    return {
+      date,
+      totalCalories: meals.reduce((sum, m) => sum + m.calories, 0),
+      meals,
+    }
+  })
 
   return { phase, calorieGoal: profile.calorieGoal, days }
 }
