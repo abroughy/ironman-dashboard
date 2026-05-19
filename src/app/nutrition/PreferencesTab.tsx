@@ -14,6 +14,7 @@ interface Props {
   phase: string
 }
 
+// BMR formula: Mifflin-St Jeor, assumes 175cm height, age 30, male
 function estimateCalories(weightKg: number, phase: string): number {
   const bmr = 10 * weightKg + 6.25 * 175 - 5 * 30 + 5
   const multipliers: Record<string, number> = {
@@ -43,30 +44,55 @@ const pillBase = 'px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer tr
 const pillActive = 'bg-orange-500/20 border-orange-500 text-orange-400'
 const pillInactive = 'bg-[#2a2a2a] border-[#3a3a3a] text-gray-400'
 
-async function patchProfile(data: Partial<Profile>) {
-  await fetch('/api/nutrition/profile', {
+async function patchProfile(data: Partial<Omit<Profile, 'id'>>) {
+  const res = await fetch('/api/nutrition/profile', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
+  if (!res.ok) throw new Error('Failed to save')
 }
 
 export default function PreferencesTab({ phase }: Props) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [calorieInput, setCalorieInput] = useState('')
   const [weightInput, setWeightInput] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
 
   useEffect(() => {
-    fetch('/api/nutrition/profile')
-      .then(r => r.json())
-      .then((p: Profile) => {
-        setProfile(p)
-        setCalorieInput(String(p.calorieGoal))
-        setWeightInput(p.weightKg != null ? String(p.weightKg) : '')
-      })
-  }, [])
+    setLoading(true)
+    const load = async () => {
+      try {
+        const res = await fetch('/api/nutrition/profile')
+        if (!res.ok) throw new Error('Failed to load')
+        const data: Profile = await res.json()
+        setProfile(data)
+        setCalorieInput(String(data.calorieGoal))
+        setWeightInput(data.weightKg != null ? String(data.weightKg) : '')
+      } catch {
+        setFetchError('Failed to load preferences. Please try again.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [retryCount])
 
-  if (!profile) {
+  if (fetchError) return (
+    <div className="p-4 text-center">
+      <p className="text-red-400 text-sm mb-3">{fetchError}</p>
+      <button
+        onClick={() => { setFetchError(null); setRetryCount(c => c + 1) }}
+        className="text-orange-400 text-sm underline"
+      >Retry</button>
+    </div>
+  )
+
+  if (loading || !profile) {
     return <div className="text-gray-500 text-sm p-4 animate-pulse">Loading preferences…</div>
   }
 
@@ -81,29 +107,71 @@ export default function PreferencesTab({ phase }: Props) {
     : []
 
   async function handleDietChange(value: string) {
+    if (saving) return
+    const prev = profile
     setProfile(p => p ? { ...p, diet: value } : p)
-    await patchProfile({ diet: value })
+    setSaveError(null)
+    setSaving(true)
+    try {
+      await patchProfile({ diet: value })
+    } catch {
+      setProfile(prev)
+      setSaveError('Failed to save. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleAllergenToggle(value: string) {
+    if (saving) return
+    const prev = profile
     const current = activeAllergens.includes(value)
       ? activeAllergens.filter(a => a !== value)
       : [...activeAllergens, value]
     const intolerances = current.join(',')
     setProfile(p => p ? { ...p, intolerances } : p)
-    await patchProfile({ intolerances })
+    setSaveError(null)
+    setSaving(true)
+    try {
+      await patchProfile({ intolerances })
+    } catch {
+      setProfile(prev)
+      setSaveError('Failed to save. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleMealsChange(value: number) {
+    if (saving) return
+    const prev = profile
     setProfile(p => p ? { ...p, mealsPerDay: value } : p)
-    await patchProfile({ mealsPerDay: value })
+    setSaveError(null)
+    setSaving(true)
+    try {
+      await patchProfile({ mealsPerDay: value })
+    } catch {
+      setProfile(prev)
+      setSaveError('Failed to save. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleCalorieBlur() {
     const val = parseInt(calorieInput, 10)
     if (!isNaN(val) && val >= 1000 && val <= 10000) {
+      const prev = profile
+      const prevInput = String(currentProfile.calorieGoal)
       setProfile(p => p ? { ...p, calorieGoal: val } : p)
-      await patchProfile({ calorieGoal: val })
+      setSaveError(null)
+      try {
+        await patchProfile({ calorieGoal: val })
+      } catch {
+        setProfile(prev)
+        setCalorieInput(prevInput)
+        setSaveError('Failed to save. Please try again.')
+      }
     } else {
       setCalorieInput(String(currentProfile.calorieGoal))
     }
@@ -112,11 +180,29 @@ export default function PreferencesTab({ phase }: Props) {
   async function handleWeightBlur() {
     const val = parseFloat(weightInput)
     if (weightInput === '') {
+      const prev = profile
+      const prevInput = currentProfile.weightKg != null ? String(currentProfile.weightKg) : ''
       setProfile(p => p ? { ...p, weightKg: null } : p)
-      await patchProfile({ weightKg: null })
+      setSaveError(null)
+      try {
+        await patchProfile({ weightKg: null })
+      } catch {
+        setProfile(prev)
+        setWeightInput(prevInput)
+        setSaveError('Failed to save. Please try again.')
+      }
     } else if (!isNaN(val) && val > 0 && val < 300) {
+      const prev = profile
+      const prevInput = currentProfile.weightKg != null ? String(currentProfile.weightKg) : ''
       setProfile(p => p ? { ...p, weightKg: val } : p)
-      await patchProfile({ weightKg: val })
+      setSaveError(null)
+      try {
+        await patchProfile({ weightKg: val })
+      } catch {
+        setProfile(prev)
+        setWeightInput(prevInput)
+        setSaveError('Failed to save. Please try again.')
+      }
     } else {
       setWeightInput(currentProfile.weightKg != null ? String(currentProfile.weightKg) : '')
     }
@@ -143,7 +229,7 @@ export default function PreferencesTab({ phase }: Props) {
               type="number"
               className={`${inputClass} w-32`}
               value={calorieInput}
-              onChange={e => setCalorieInput(e.target.value)}
+              onChange={e => { setCalorieInput(e.target.value); setSaveError(null) }}
               onBlur={handleCalorieBlur}
               min={1000}
               max={10000}
@@ -155,7 +241,7 @@ export default function PreferencesTab({ phase }: Props) {
               type="number"
               className={`${inputClass} w-24`}
               value={weightInput}
-              onChange={e => setWeightInput(e.target.value)}
+              onChange={e => { setWeightInput(e.target.value); setSaveError(null) }}
               onBlur={handleWeightBlur}
               placeholder="e.g. 75"
               min={30}
@@ -163,6 +249,7 @@ export default function PreferencesTab({ phase }: Props) {
             />
           </div>
         </div>
+        {saveError && <p className="text-red-400 text-xs mt-2">{saveError}</p>}
       </div>
 
       {/* Diet */}
@@ -173,12 +260,14 @@ export default function PreferencesTab({ phase }: Props) {
             <button
               key={opt.value}
               onClick={() => handleDietChange(opt.value)}
+              disabled={saving}
               className={`${pillBase} ${currentProfile.diet === opt.value ? pillActive : pillInactive}`}
             >
               {opt.label}
             </button>
           ))}
         </div>
+        {saveError && <p className="text-red-400 text-xs mt-2">{saveError}</p>}
       </div>
 
       {/* Allergens */}
@@ -189,12 +278,14 @@ export default function PreferencesTab({ phase }: Props) {
             <button
               key={opt.value}
               onClick={() => handleAllergenToggle(opt.value)}
+              disabled={saving}
               className={`${pillBase} ${activeAllergens.includes(opt.value) ? pillActive : pillInactive}`}
             >
               {opt.label}
             </button>
           ))}
         </div>
+        {saveError && <p className="text-red-400 text-xs mt-2">{saveError}</p>}
       </div>
 
       {/* Meals per day */}
@@ -205,12 +296,14 @@ export default function PreferencesTab({ phase }: Props) {
             <button
               key={n}
               onClick={() => handleMealsChange(n)}
+              disabled={saving}
               className={`${pillBase} ${currentProfile.mealsPerDay === n ? pillActive : pillInactive}`}
             >
               {n}
             </button>
           ))}
         </div>
+        {saveError && <p className="text-red-400 text-xs mt-2">{saveError}</p>}
       </div>
     </div>
   )
