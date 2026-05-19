@@ -8,6 +8,7 @@ import { redirect } from 'next/navigation'
 export const dynamic = 'force-dynamic'
 import PhaseBanner from '@/components/PhaseBanner'
 import WellnessWidget from '@/components/WellnessWidget'
+import NutritionWidget from '@/components/NutritionWidget'
 import LoadRing from '@/components/LoadRing'
 import CoachingCard from '@/components/CoachingCard'
 import TrainingLoadCard from '@/components/TrainingLoadCard'
@@ -97,6 +98,8 @@ export default async function DashboardPage() {
         } : null}
         showWarning={wellnessData.showWarning}
       />
+
+      <NutritionWidget />
 
       {!stravaToken && (
         <div className="bg-gray-900 rounded-xl p-4 border border-dashed border-gray-700 text-center">

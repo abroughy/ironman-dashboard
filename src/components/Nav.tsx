@@ -89,6 +89,7 @@ const BASE_LINKS = [
   { href: '/pbs', label: 'PBs', icon: <TrophyIcon /> },
   { href: '/suggestions', label: 'Coaching', icon: <BrainIcon /> },
   { href: '/recovery', label: 'Recovery', icon: <HeartIcon /> },
+  { href: '/nutrition', label: 'Nutrition', icon: <span className="text-lg">🥗</span> },
   { href: '/group', label: 'Group', icon: <PeopleIcon /> },
   { href: '/profile', label: 'Profile', icon: <UserCircleIcon /> },
 ]
