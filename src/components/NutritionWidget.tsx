@@ -71,7 +71,7 @@ export default function NutritionWidget() {
     )
   }
 
-  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayStr = new Date().toLocaleDateString('en-CA') // "YYYY-MM-DD" in local timezone
   const todayPlan = plan?.content.days.find(d => d.date === todayStr)
 
   if (error || !plan || !todayPlan) {
