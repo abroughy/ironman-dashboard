@@ -6,6 +6,7 @@ import { getNextRace } from '@/lib/races'
 import { currentPhaseFromWeeks, weeksToRaceFromDate } from '@/lib/config'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60 // seconds — generation takes 15–30s
 
 export async function POST(request: NextRequest) {
   const session = await getSessionFromRequest(request)
