@@ -65,7 +65,8 @@ export async function GET(request: NextRequest) {
       content: JSON.parse(plan.content),
     })
   } catch (err) {
-    console.error('Failed to generate meal plan:', err)
-    return NextResponse.json({ error: 'Failed to generate meal plan' }, { status: 500 })
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('Failed to generate meal plan:', message)
+    return NextResponse.json({ error: 'Failed to generate meal plan', detail: message }, { status: 500 })
   }
 }
