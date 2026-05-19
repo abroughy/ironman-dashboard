@@ -119,6 +119,7 @@ export default function NutritionClient() {
             fatG: meal.fatG,
           }),
         })
+        if (!res.ok) throw new Error('Failed to save favourite')
         const saved: FavouriteMeal = await res.json()
         // Replace temp with real saved record
         setFavourites(prev => prev.map(f => f.id === temp.id ? saved : f))

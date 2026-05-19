@@ -69,16 +69,21 @@ title,cal,pro,carb,fat`
       .filter(Boolean)
       .slice(0, 3)
       .map(line => {
-        const [title, cal, pro, carb, fat] = line.split(',')
+        // Split from right: last 4 comma-separated values are cal,pro,carb,fat
+        // Everything before is the title (may contain commas)
+        const parts = line.split(',')
+        if (parts.length < 5) return null
+        const [fat, carb, pro, cal, ...titleParts] = [...parts].reverse()
+        const title = titleParts.reverse().join(',').trim()
         return {
-          title: (title ?? '').trim(),
+          title,
           calories: Math.round(Number(cal) || 0),
           proteinG: Math.round(Number(pro) || 0),
           carbsG: Math.round(Number(carb) || 0),
           fatG: Math.round(Number(fat) || 0),
         }
       })
-      .filter(o => o.title.length > 0)
+      .filter((o): o is NonNullable<typeof o> => o !== null && o.title.length > 0)
 
     return NextResponse.json({ options })
   } catch (e) {
