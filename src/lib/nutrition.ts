@@ -196,7 +196,7 @@ Return exactly ${weekDates.length} × ${slots.length} = ${totalMeals} objects.`
 
   const client = new Anthropic({ apiKey: config.anthropicApiKey })
   const message = await client.messages.create({
-    model: 'claude-haiku-4-5',
+    model: 'claude-sonnet-4-5',
     max_tokens: 8000,
     messages: [{ role: 'user', content: prompt }],
   })
