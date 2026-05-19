@@ -25,6 +25,8 @@ model User {
   races             Race[]
   wellnessLogs      WellnessLog[]
   groupChallenges   GroupChallenge[]
+  nutritionProfile  NutritionProfile?
+  mealPlans         MealPlan[]
 }
 
 model Race {
@@ -122,4 +124,31 @@ model GroupChallenge {
 
   @@index([createdBy])
   @@index([endDate])
+}
+
+model NutritionProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  calorieGoal  Int      @default(3000)
+  weightKg     Float?
+  diet         String   @default("none")   // "none"|"vegetarian"|"vegan"|"glutenFree"|"dairyFree"
+  intolerances String   @default("")       // comma-separated UI keys: "nuts,shellfish,eggs,soy"
+  mealsPerDay  Int      @default(5)        // 3–6
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MealPlan {
+  id          String   @id @default(cuid())
+  userId      String
+  weekStart   DateTime
+  content     String   // JSON: MealPlanContent
+  generatedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekStart])
+  @@index([userId])
 }

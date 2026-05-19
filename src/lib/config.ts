@@ -13,6 +13,7 @@ export const config = {
     webhookVerifyToken: process.env.STRAVA_WEBHOOK_VERIFY_TOKEN ?? '',
   },
   anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? '',
+  spoonacularApiKey: process.env.SPOONACULAR_API_KEY ?? '',
   appUrl: process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000',
 }
 
