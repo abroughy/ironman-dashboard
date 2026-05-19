@@ -40,3 +40,27 @@ export const SLOT_LABELS: Record<string, string> = {
   dinner: 'Dinner',
   eveningSnack: 'Evening Snack',
 }
+
+export interface RecipeDetail {
+  title: string
+  ingredients: string[]
+  steps: string[]
+}
+
+export interface FavouriteMeal {
+  id: string
+  title: string
+  slot: string
+  calories: number
+  proteinG: number
+  carbsG: number
+  fatG: number
+}
+
+export interface SwapOption {
+  title: string
+  calories: number
+  proteinG: number
+  carbsG: number
+  fatG: number
+}
