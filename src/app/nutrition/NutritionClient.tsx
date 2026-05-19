@@ -1,28 +1,8 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import MealPlanTab from './MealPlanTab'
 import PreferencesTab from './PreferencesTab'
-
-// Type inlined to avoid importing server-only @anthropic-ai/sdk via @/lib/nutrition
-interface MealPlanContent {
-  phase: string
-  calorieGoal: number
-  days: {
-    date: string
-    totalCalories: number
-    meals: {
-      slot: string
-      recipeId: number
-      title: string
-      image: string
-      sourceUrl: string
-      calories: number
-      proteinG: number
-      carbsG: number
-      fatG: number
-    }[]
-  }[]
-}
+import { MealPlanContent } from '@/types/nutrition'
 
 interface Profile {
   id: string
@@ -43,29 +23,29 @@ type Tab = 'plan' | 'preferences'
 
 export default function NutritionClient({ initialProfile }: { initialProfile: Profile }) {
   const [tab, setTab] = useState<Tab>('plan')
-  const [profile, setProfile] = useState<Profile>(initialProfile)
+  const [, setProfile] = useState<Profile>(initialProfile)
   const [plan, setPlan] = useState<PlanResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    fetchPlan()
-  }, [])
-
-  async function fetchPlan() {
+  const fetchPlan = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
       const res = await fetch('/api/nutrition/plan')
-      if (!res.ok) throw new Error('Failed to load plan')
-      const data = await res.json() as PlanResponse
+      if (!res.ok) throw new Error('Failed to load meal plan')
+      const data = await res.json()
       setPlan(data)
     } catch {
       setError('Failed to load meal plan. Please try again.')
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    fetchPlan()
+  }, [fetchPlan])
 
   async function regeneratePlan() {
     setLoading(true)
@@ -109,11 +89,7 @@ export default function NutritionClient({ initialProfile }: { initialProfile: Pr
       )}
 
       {tab === 'preferences' && (
-        <PreferencesTab
-          profile={profile}
-          onProfileChange={setProfile}
-          onRegenerate={regeneratePlan}
-        />
+        <PreferencesTab />
       )}
     </div>
   )

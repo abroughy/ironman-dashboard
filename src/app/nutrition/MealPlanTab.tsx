@@ -1,48 +1,6 @@
 'use client'
 import { useState } from 'react'
-
-// Types inlined to avoid importing server-only @anthropic-ai/sdk via @/lib/nutrition
-interface MealPlanContent {
-  phase: string
-  calorieGoal: number
-  days: DayPlan[]
-}
-
-interface DayPlan {
-  date: string
-  totalCalories: number
-  meals: Meal[]
-}
-
-interface Meal {
-  slot: string
-  recipeId: number
-  title: string
-  image: string
-  sourceUrl: string
-  calories: number
-  proteinG: number
-  carbsG: number
-  fatG: number
-}
-
-const SLOT_EMOJIS: Record<string, string> = {
-  breakfast: '🌅',
-  morningSnack: '🍎',
-  lunch: '☀️',
-  afternoonSnack: '🍌',
-  dinner: '🌙',
-  eveningSnack: '🌙',
-}
-
-const SLOT_LABELS: Record<string, string> = {
-  breakfast: 'Breakfast',
-  morningSnack: 'Morning Snack',
-  lunch: 'Lunch',
-  afternoonSnack: 'Afternoon Snack',
-  dinner: 'Dinner',
-  eveningSnack: 'Evening Snack',
-}
+import { Meal, MealPlanContent, SLOT_EMOJIS, SLOT_LABELS } from '@/types/nutrition'
 
 interface PlanResponse {
   weekStart: string
@@ -151,12 +109,13 @@ export default function MealPlanTab({ plan, loading, error, onRegenerate }: Prop
         <div>
           <p className="text-xs text-gray-500">{PHASE_LABELS[phase] ?? phase}</p>
           <p className="text-xs text-gray-600">
-            Week of {new Date(plan.content.days[0]?.date ?? plan.weekStart).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+            Week of {new Date((plan.content.days[0]?.date ?? plan.weekStart) + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
           </p>
         </div>
         <button
           onClick={onRegenerate}
-          className="text-xs text-orange-400 hover:text-orange-300 border border-orange-500/30 px-3 py-1.5 rounded-lg"
+          disabled={loading}
+          className="text-xs text-orange-400 hover:text-orange-300 border border-orange-500/30 px-3 py-1.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
           ↺ Regenerate
         </button>
@@ -165,7 +124,7 @@ export default function MealPlanTab({ plan, loading, error, onRegenerate }: Prop
       {/* Day picker */}
       <div className="flex gap-2 overflow-x-auto pb-1">
         {days.map(day => {
-          const d = new Date(day.date)
+          const d = new Date(day.date + 'T00:00:00')
           const isActive = day.date === activeDateStr
           const isToday = day.date === today
           return (
@@ -194,8 +153,8 @@ export default function MealPlanTab({ plan, loading, error, onRegenerate }: Prop
       {activeDay ? (
         <div className="space-y-2">
           <p className="text-xs text-gray-500 text-right">{activeDay.totalCalories} kcal total</p>
-          {activeDay.meals.map((meal, i) => (
-            <RecipeCard key={i} meal={meal} />
+          {activeDay.meals.map((meal) => (
+            <RecipeCard key={meal.recipeId} meal={meal} />
           ))}
           {activeDay.meals.length === 0 && (
             <p className="text-gray-500 text-sm text-center py-8">No meals for this day.</p>
