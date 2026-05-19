@@ -27,6 +27,7 @@ model User {
   groupChallenges   GroupChallenge[]
   nutritionProfile  NutritionProfile?
   mealPlans         MealPlan[]
+  favouriteMeals    FavouriteMeal[]
 }
 
 model Race {
@@ -150,5 +151,22 @@ model MealPlan {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, weekStart])
+  @@index([userId])
+}
+
+model FavouriteMeal {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  title     String
+  slot      String
+  calories  Int
+  proteinG  Int
+  carbsG    Int
+  fatG      Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, title])
   @@index([userId])
 }
