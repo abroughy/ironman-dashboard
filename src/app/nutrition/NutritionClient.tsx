@@ -89,7 +89,7 @@ export default function NutritionClient({ initialProfile }: { initialProfile: Pr
       )}
 
       {tab === 'preferences' && (
-        <PreferencesTab />
+        <PreferencesTab phase={plan?.content?.phase ?? 'Base'} />
       )}
     </div>
   )
