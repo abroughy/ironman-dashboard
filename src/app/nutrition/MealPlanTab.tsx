@@ -14,6 +14,10 @@ interface Props {
   error: string
   onRegenerate: () => void
   onRetry: () => void
+  favouriteTitles: Set<string>
+  onCardClick: (meal: Meal, date: string) => void
+  onToggleFavourite: (meal: Meal) => void
+  onSwap: (meal: Meal, date: string) => void
 }
 
 const PHASE_LABELS: Record<string, string> = {
@@ -32,42 +36,85 @@ function MacroPill({ label, value, colour }: { label: string; value: number; col
   )
 }
 
-function RecipeCard({ meal }: { meal: Meal }) {
+function RecipeCard({
+  meal,
+  date,
+  isFav,
+  onCardClick,
+  onToggleFavourite,
+  onSwap,
+}: {
+  meal: Meal
+  date: string
+  isFav: boolean
+  onCardClick: (meal: Meal, date: string) => void
+  onToggleFavourite: (meal: Meal) => void
+  onSwap: (meal: Meal, date: string) => void
+}) {
   return (
-    <a
-      href={meal.sourceUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex gap-0 bg-gray-900/60 border border-white/5 rounded-2xl overflow-hidden hover:border-white/10 transition-colors"
-    >
-      {meal.image ? (
-        <img
-          src={meal.image}
-          alt={meal.title}
-          className="w-20 h-20 object-cover flex-shrink-0"
-        />
-      ) : (
-        <div className="w-20 h-20 bg-gray-800 flex-shrink-0 text-3xl flex items-center justify-center">
-          {SLOT_EMOJIS[meal.slot] ?? '🍽️'}
+    <div className="relative flex bg-gray-900/60 border border-white/5 rounded-2xl overflow-hidden hover:border-white/10 transition-colors">
+      {/* Main tappable area — opens recipe drawer */}
+      <button
+        onClick={() => onCardClick(meal, date)}
+        className="flex flex-1 text-left min-w-0"
+      >
+        {meal.image ? (
+          <img src={meal.image} alt={meal.title} className="w-20 h-20 object-cover flex-shrink-0" />
+        ) : (
+          <div className="w-20 h-20 bg-gray-800 flex-shrink-0 text-3xl flex items-center justify-center">
+            {SLOT_EMOJIS[meal.slot] ?? '🍽️'}
+          </div>
+        )}
+        <div className="px-3 py-2.5 flex flex-col justify-center gap-1 min-w-0 pr-20">
+          <p className="text-[10px] text-gray-500 uppercase tracking-wide">
+            {SLOT_EMOJIS[meal.slot]} {SLOT_LABELS[meal.slot] ?? meal.slot}
+          </p>
+          <p className="text-sm font-medium text-white leading-tight line-clamp-2">{meal.title}</p>
+          <div className="flex flex-wrap gap-1 mt-0.5">
+            <span className="text-[10px] text-gray-400">{meal.calories} kcal</span>
+            <MacroPill label="C" value={meal.carbsG} colour="bg-orange-500/20 text-orange-300" />
+            <MacroPill label="P" value={meal.proteinG} colour="bg-blue-500/20 text-blue-300" />
+            <MacroPill label="F" value={meal.fatG} colour="bg-gray-700 text-gray-400" />
+          </div>
         </div>
-      )}
-      <div className="px-3 py-2.5 flex flex-col justify-center gap-1 min-w-0">
-        <p className="text-[10px] text-gray-500 uppercase tracking-wide">
-          {SLOT_EMOJIS[meal.slot]} {SLOT_LABELS[meal.slot] ?? meal.slot}
-        </p>
-        <p className="text-sm font-medium text-white leading-tight line-clamp-2">{meal.title}</p>
-        <div className="flex flex-wrap gap-1 mt-0.5">
-          <span className="text-[10px] text-gray-400">{meal.calories} kcal</span>
-          <MacroPill label="C" value={meal.carbsG} colour="bg-orange-500/20 text-orange-300" />
-          <MacroPill label="P" value={meal.proteinG} colour="bg-blue-500/20 text-blue-300" />
-          <MacroPill label="F" value={meal.fatG} colour="bg-gray-700 text-gray-400" />
-        </div>
+      </button>
+
+      {/* Icon buttons — top-right corner */}
+      <div className="absolute right-2 top-2 flex flex-col gap-1">
+        <button
+          onClick={e => { e.stopPropagation(); onToggleFavourite(meal) }}
+          className={`w-7 h-7 rounded-full flex items-center justify-center text-xs transition-colors ${
+            isFav
+              ? 'text-red-400 bg-red-500/20'
+              : 'text-gray-500 bg-gray-800 hover:text-gray-300'
+          }`}
+          title={isFav ? 'Remove from favourites' : 'Save to favourites'}
+        >
+          {isFav ? '♥' : '♡'}
+        </button>
+        <button
+          onClick={e => { e.stopPropagation(); onSwap(meal, date) }}
+          className="w-7 h-7 rounded-full flex items-center justify-center text-xs text-gray-500 bg-gray-800 hover:text-orange-400 transition-colors"
+          title="Swap this meal"
+        >
+          ⇄
+        </button>
       </div>
-    </a>
+    </div>
   )
 }
 
-export default function MealPlanTab({ plan, loading, error, onRegenerate, onRetry }: Props) {
+export default function MealPlanTab({
+  plan,
+  loading,
+  error,
+  onRegenerate,
+  onRetry,
+  favouriteTitles,
+  onCardClick,
+  onToggleFavourite,
+  onSwap,
+}: Props) {
   const days = plan?.content.days ?? []
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
 
@@ -110,7 +157,10 @@ export default function MealPlanTab({ plan, loading, error, onRegenerate, onRetr
         <div>
           <p className="text-xs text-gray-500">{PHASE_LABELS[phase] ?? phase}</p>
           <p className="text-xs text-gray-600">
-            Week of {new Date((plan.content.days[0]?.date ?? plan.weekStart) + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+            Week of{' '}
+            {new Date(
+              (plan.content.days[0]?.date ?? plan.weekStart) + 'T00:00:00',
+            ).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
           </p>
         </div>
         <button
@@ -133,9 +183,7 @@ export default function MealPlanTab({ plan, loading, error, onRegenerate, onRetr
               key={day.date}
               onClick={() => setSelectedDate(day.date)}
               className={`flex flex-col items-center px-3 py-1.5 rounded-xl text-xs flex-shrink-0 transition-colors ${
-                isActive
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                isActive ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
               }`}
             >
               <span className="font-medium">
@@ -144,7 +192,9 @@ export default function MealPlanTab({ plan, loading, error, onRegenerate, onRetr
               <span className={isActive ? 'text-orange-100' : 'text-gray-600'}>
                 {d.getDate()}
               </span>
-              {isToday && !isActive && <span className="w-1 h-1 rounded-full bg-orange-500 mt-0.5" />}
+              {isToday && !isActive && (
+                <span className="w-1 h-1 rounded-full bg-orange-500 mt-0.5" />
+              )}
             </button>
           )
         })}
@@ -154,8 +204,16 @@ export default function MealPlanTab({ plan, loading, error, onRegenerate, onRetr
       {activeDay ? (
         <div className="space-y-2">
           <p className="text-xs text-gray-500 text-right">{activeDay.totalCalories} kcal total</p>
-          {activeDay.meals.map((meal) => (
-            <RecipeCard key={meal.recipeId} meal={meal} />
+          {activeDay.meals.map(meal => (
+            <RecipeCard
+              key={meal.recipeId}
+              meal={meal}
+              date={activeDay.date}
+              isFav={favouriteTitles.has(meal.title)}
+              onCardClick={onCardClick}
+              onToggleFavourite={onToggleFavourite}
+              onSwap={onSwap}
+            />
           ))}
           {activeDay.meals.length === 0 && (
             <p className="text-gray-500 text-sm text-center py-8">No meals for this day.</p>

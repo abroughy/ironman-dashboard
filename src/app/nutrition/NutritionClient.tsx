@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import MealPlanTab from './MealPlanTab'
 import PreferencesTab from './PreferencesTab'
-import { MealPlanContent } from '@/types/nutrition'
+import { Meal, MealPlanContent } from '@/types/nutrition'
 
 interface PlanResponse {
   weekStart: string
@@ -79,6 +79,10 @@ export default function NutritionClient() {
           error={error}
           onRegenerate={regeneratePlan}
           onRetry={fetchPlan}
+          favouriteTitles={new Set<string>()}
+          onCardClick={(_meal: Meal, _date: string) => {}}
+          onToggleFavourite={(_meal: Meal) => {}}
+          onSwap={(_meal: Meal, _date: string) => {}}
         />
       )}
 
