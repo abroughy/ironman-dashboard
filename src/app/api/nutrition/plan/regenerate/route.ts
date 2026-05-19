@@ -12,6 +12,8 @@ export async function POST(request: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
+    const weekStart = getWeekStart()
+
     const profile = await prisma.nutritionProfile.upsert({
       where: { userId: session.userId },
       update: {},
@@ -34,7 +36,6 @@ export async function POST(request: NextRequest) {
       phase,
     )
 
-    const weekStart = getWeekStart()
     const plan = await prisma.mealPlan.upsert({
       where: { userId_weekStart: { userId: session.userId, weekStart } },
       update: { content: JSON.stringify(content), generatedAt: new Date() },
