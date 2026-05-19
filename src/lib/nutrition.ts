@@ -64,9 +64,13 @@ export const SLOT_LABELS: Record<string, string> = {
 
 // ─── Pure helpers ─────────────────────────────────────────────────────────────
 
+/** Population-typical placeholders used in Mifflin-St Jeor formula */
+const BMR_HEIGHT_CM = 175
+const BMR_AGE_YEARS = 30
+
 /** Mifflin-St Jeor BMR × phase activity multiplier */
 export function estimateCalories(weightKg: number, phase: string): number {
-  const bmr = (10 * weightKg) + (6.25 * 175) - (5 * 30) + 5
+  const bmr = (10 * weightKg) + (6.25 * BMR_HEIGHT_CM) - (5 * BMR_AGE_YEARS) + 5
   const multipliers: Record<string, number> = {
     'Peak': 1.75,
     'Race Week': 1.75,
@@ -274,7 +278,7 @@ Return exactly ${weekDates.length * slots.length} objects (${weekDates.length} d
   const client = new Anthropic({ apiKey: config.anthropicApiKey })
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 4000,
+    max_tokens: 6000,
     messages: [{ role: 'user', content: prompt }],
   })
 
@@ -284,6 +288,9 @@ Return exactly ${weekDates.length * slots.length} objects (${weekDates.length} d
     parsed = JSON.parse(text) as ClaudeMealSlot[]
   } catch {
     throw new Error(`Claude returned invalid JSON: ${text.slice(0, 300)}`)
+  }
+  if (!Array.isArray(parsed)) {
+    throw new Error(`Claude returned unexpected structure (expected array): ${text.slice(0, 300)}`)
   }
   return parsed
 }
