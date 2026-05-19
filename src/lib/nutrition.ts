@@ -144,96 +144,55 @@ export async function generateMealPlan(
   })
 
   const phaseGuidance: Record<string, string> = {
-    Peak: 'High carb focus: 60% carbs, 25% protein, 15% fat. Prioritise pasta, rice, potatoes, oats.',
-    'Race Week': 'Carb-loading: 65% carbs, 20% protein, 15% fat. Easy-to-digest foods only.',
-    Build: 'Balanced macros: 50% carbs, 30% protein, 20% fat. Good mix of whole foods.',
-    Taper: `Reduced total calories (${Math.round(profile.calorieGoal * 0.85)} kcal/day). Maintain protein. 50% carbs, 30% protein, 20% fat.`,
+    Peak: 'High carb: 60% carbs, 25% protein, 15% fat. Pasta, rice, potatoes, oats.',
+    'Race Week': 'Carb-loading: 65% carbs, 20% protein, 15% fat. Easy-to-digest only.',
+    Build: 'Balanced: 50% carbs, 30% protein, 20% fat.',
+    Taper: `Reduced calories (${Math.round(profile.calorieGoal * 0.85)} kcal/day). 50% carbs, 30% protein, 20% fat.`,
   }
-  const guidance = phaseGuidance[phase] ?? 'Balanced macros: 50% carbs, 30% protein, 20% fat.'
-
-  const dietNote = profile.diet !== 'none' ? `Diet preference: ${profile.diet}.` : ''
-  const intoleranceNote = profile.intolerances ? `Avoid these allergens: ${profile.intolerances}.` : ''
-
-  const totalMeals = weekDates.length * slots.length
-
-  const prompt = `You are a sports nutritionist creating a weekly meal plan for an endurance triathlete.
-
-Training phase: ${phase}
-Nutrition guidance: ${guidance}
-Daily calorie goal: ${profile.calorieGoal} kcal
-Meal slots per day: ${JSON.stringify(slots)}
-Week dates (Mon–Sun): ${JSON.stringify(weekDates)}
-${dietNote}
-${intoleranceNote}
-
-For each meal, provide:
-- A specific, realistic recipe name (not generic — e.g. "Grilled salmon with sweet potato mash" not just "Salmon")
-- Realistic macro estimates based on the recipe
-- A recipeId (just use a unique integer 1–${totalMeals})
-- image: empty string ""
-- sourceUrl: a Google search URL like "https://www.google.com/search?q=recipe+name+recipe" (URL-encode the recipe name)
-
-Distribute daily calories: breakfast ~25%, each snack ~8–10%, lunch ~30%, dinner ~30%.
-Vary meals — do not repeat the same dish on consecutive days.
-
-Respond with valid JSON only — no markdown, no explanation. Return an array of exactly ${totalMeals} objects:
-[
-  {
-    "date": "2026-05-19",
-    "slot": "breakfast",
-    "recipeId": 1,
-    "title": "Banana oat pancakes with honey",
-    "image": "",
-    "sourceUrl": "https://www.google.com/search?q=banana+oat+pancakes+recipe",
-    "calories": 620,
-    "proteinG": 18,
-    "carbsG": 95,
-    "fatG": 14
-  }
-]
-
-Return exactly ${weekDates.length} × ${slots.length} = ${totalMeals} objects.`
+  const guidance = phaseGuidance[phase] ?? 'Balanced: 50% carbs, 30% protein, 20% fat.'
+  const dietNote = profile.diet !== 'none' ? `Diet: ${profile.diet}.` : ''
+  const intoleranceNote = profile.intolerances ? `Avoid: ${profile.intolerances}.` : ''
 
   const client = new Anthropic({ apiKey: config.anthropicApiKey })
-  const message = await client.messages.create({
-    model: 'claude-3-5-haiku-20241022',
-    max_tokens: 8000,
-    messages: [{ role: 'user', content: prompt }],
-  })
 
-  const text = message.content[0].type === 'text' ? message.content[0].text : ''
+  // Generate one day at a time in parallel — keeps each call small and fast (<3s each)
+  // This avoids Vercel's 10s function timeout vs generating all 7 days in one big call
+  const days: DayPlan[] = await Promise.all(
+    weekDates.map(async (date, dayIndex) => {
+      const prompt = `Sports nutritionist meal plan for an endurance triathlete.
+Phase: ${phase}. ${guidance}
+Calories: ${profile.calorieGoal} kcal. ${dietNote} ${intoleranceNote}
+Date: ${date}. Slots: ${JSON.stringify(slots)}.
+Calories split: breakfast 25%, snacks 8-10% each, lunch 30%, dinner 30%.
 
-  // Strip any markdown code fences Claude might wrap around the JSON
-  const cleaned = text.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim()
+Return JSON array of ${slots.length} meals only — no markdown:
+[{"slot":"breakfast","recipeId":${dayIndex * slots.length + 1},"title":"Specific recipe name","image":"","sourceUrl":"https://www.google.com/search?q=recipe+name+recipe","calories":620,"proteinG":18,"carbsG":95,"fatG":14}]`
 
-  interface ClaudeMeal extends Meal { date: string }
+      const message = await client.messages.create({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 1200,
+        messages: [{ role: 'user', content: prompt }],
+      })
 
-  let parsed: ClaudeMeal[]
-  try {
-    parsed = JSON.parse(cleaned) as ClaudeMeal[]
-  } catch {
-    throw new Error(`Claude returned invalid JSON: ${cleaned.slice(0, 300)}`)
-  }
-  if (!Array.isArray(parsed)) {
-    throw new Error(`Claude returned unexpected structure (expected array): ${cleaned.slice(0, 300)}`)
-  }
+      const text = message.content[0].type === 'text' ? message.content[0].text : '[]'
+      const cleaned = text.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim()
 
-  // Group meals by date
-  const dayMap = new Map<string, Meal[]>()
-  for (const meal of parsed) {
-    const { date, ...mealData } = meal
-    if (!dayMap.has(date)) dayMap.set(date, [])
-    dayMap.get(date)!.push(mealData)
-  }
+      let meals: Meal[] = []
+      try {
+        const parsed = JSON.parse(cleaned)
+        if (Array.isArray(parsed)) meals = parsed as Meal[]
+      } catch {
+        // If parsing fails for one day, return empty meals for that day
+        console.error(`Failed to parse meals for ${date}:`, cleaned.slice(0, 200))
+      }
 
-  const days: DayPlan[] = weekDates.map(date => {
-    const meals = dayMap.get(date) ?? []
-    return {
-      date,
-      totalCalories: meals.reduce((sum, m) => sum + m.calories, 0),
-      meals,
-    }
-  })
+      return {
+        date,
+        totalCalories: meals.reduce((sum, m) => sum + m.calories, 0),
+        meals,
+      }
+    })
+  )
 
   return { phase, calorieGoal: profile.calorieGoal, days }
 }
